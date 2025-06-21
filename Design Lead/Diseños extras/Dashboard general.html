@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Wireframe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .wireframe-box {
+            border: 2px dashed #94a3b8;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .wireframe-placeholder {
+            background-color: #e2e8f0;
+            border: 1px dashed #94a3b8;
+            height: 40px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .wireframe-btn {
+            background-color: #e2e8f0;
+            border: 1px dashed #94a3b8;
+            padding: 8px 16px;
+            border-radius: 4px;
+            color: #64748b;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+        .wireframe-btn:hover {
+            background-color: #cbd5e1;
+        }
+        .wireframe-nav {
+            background-color: #334155;
+            color: white;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+        .wireframe-nav-item {
+            display: inline-block;
+            margin-right: 16px;
+            color: #e2e8f0;
+        }
+        .wireframe-card {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-slate-800 mb-8">Dashboard Wireframe</h1>
+        
+        <div class="wireframe-box">
+            <div class="wireframe-nav">
+                <div class="wireframe-nav-item">Dashboard</div>
+                <div class="wireframe-nav-item">Tasks</div>
+                <div class="wireframe-nav-item">Projects</div>
+                <div class="wireframe-nav-item">Team</div>
+                <div class="wireframe-nav-item" style="float: right;">User Profile</div>
+            </div>
+            
+            <h2 class="text-xl font-semibold mb-6 text-slate-700">Dashboard Overview</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="wireframe-card">
+                    <div class="text-slate-500 mb-2">Open Tasks</div>
+                    <div class="text-2xl font-bold">24</div>
+                </div>
+                <div class="wireframe-card">
+                    <div class="text-slate-500 mb-2">Completed Today</div>
+                    <div class="text-2xl font-bold">8</div>
+                </div>
+                <div class="wireframe-card">
+                    <div class="text-slate-500 mb-2">Overdue</div>
+                    <div class="text-2xl font-bold">3</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="wireframe-card">
+                    <div class="text-lg font-semibold mb-3">Recent Activity</div>
+                    <div class="wireframe-placeholder" style="height: 20px;">John completed "Update documentation"</div>
+                    <div class="wireframe-placeholder" style="height: 20px;">Sarah commented on "Design new dashboard"</div>
+                    <div class="wireframe-placeholder" style="height: 20px;">Mike assigned "Fix login bug" to you</div>
+                    <div class="wireframe-btn mt-3">View All</div>
+                </div>
+                
+                <div class="wireframe-card">
+                    <div class="text-lg font-semibold mb-3">Upcoming Deadlines</div>
+                    <div class="wireframe-placeholder" style="height: 20px;">Dashboard redesign - Due Tomorrow</div>
+                    <div class="wireframe-placeholder" style="height: 20px;">Client presentation - Due in 2 days</div>
+                    <div class="wireframe-placeholder" style="height: 20px;">Monthly report - Due in 3 days</div>
+                    <div class="wireframe-btn mt-3">View All Tasks</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
