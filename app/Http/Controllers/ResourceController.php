@@ -2,63 +2,117 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Resource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ResourceController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct()
     {
-        //
+        $this->middleware('auth');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    public function index(Request $request)
+    {
+        $query = Resource::public()->with('uploader');
+
+        if ($request->category) {
+            $query->byCategory($request->category);
+        }
+
+        if ($request->search) {
+            $query->whereFullText(['title', 'description', 'tags'], $request->search);
+        }
+
+        $sortBy = $request->get('sort', 'recent');
+        switch ($sortBy) {
+            case 'popular':
+                $query->popular();
+                break;
+            case 'rated':
+                $query->topRated();
+                break;
+            default:
+                $query->recent();
+        }
+
+        $resources = $query->paginate(12);
+        $categories = Resource::distinct()->pluck('category');
+
+        return view('resources.index', compact('resources', 'categories'));
+    }
+
     public function create()
     {
-        //
+        return view('resources.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'file' => 'required|file|max:51200', // 50MB máximo
+            'category' => 'required|in:document,presentation,spreadsheet,image,other',
+            'tags' => 'nullable|string',
+            'is_public' => 'boolean'
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('resources', 'public');
+
+        Resource::create([
+            'title' => $request->title,
+            'description' => $request->description,
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'file_type' => $file->getClientOriginalExtension(),
+            'file_size' => $file->getSize(),
+            'category' => $request->category,
+            'tags' => $request->tags,
+            'uploaded_by' => Auth::id(),
+            'is_public' => $request->boolean('is_public', true)
+        ]);
+
+        return redirect()->route('resources.index')
+            ->with('success', 'Recurso subido exitosamente');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Resource $resource)
     {
-        //
+        $resource->load('uploader');
+        return view('resources.show', compact('resource'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function download(Resource $resource)
     {
-        //
+        $resource->incrementDownloads();
+        return Storage::disk('public')->download($resource->file_path, $resource->file_name);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Resource $resource)
     {
-        //
+        if ($resource->uploaded_by !== Auth::id()) {
+            abort(403, 'No autorizado');
+        }
+
+        Storage::disk('public')->delete($resource->file_path);
+        $resource->delete();
+
+        return redirect()->route('resources.index')
+            ->with('success', 'Recurso eliminado exitosamente');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function rate(Request $request, Resource $resource)
     {
-        //
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5'
+        ]);
+
+        $resource->updateRating($request->rating);
+
+        return response()->json(['success' => true, 'new_rating' => $resource->average_rating]);
     }
 }
