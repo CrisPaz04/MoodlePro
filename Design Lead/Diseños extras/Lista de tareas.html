@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List Wireframe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .wireframe-box {
+            border: 2px dashed #94a3b8;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .wireframe-placeholder {
+            background-color: #e2e8f0;
+            border: 1px dashed #94a3b8;
+            height: 40px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .wireframe-btn {
+            background-color: #e2e8f0;
+            border: 1px dashed #94a3b8;
+            padding: 8px 16px;
+            border-radius: 4px;
+            color: #64748b;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+        .wireframe-btn:hover {
+            background-color: #cbd5e1;
+        }
+        .wireframe-nav {
+            background-color: #334155;
+            color: white;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+        .wireframe-nav-item {
+            display: inline-block;
+            margin-right: 16px;
+            color: #e2e8f0;
+        }
+        .wireframe-card {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .wireframe-tabs {
+            display: flex;
+            border-bottom: 1px solid #cbd5e1;
+            margin-bottom: 16px;
+        }
+        .wireframe-tab {
+            padding: 8px 16px;
+            margin-right: 8px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .wireframe-tab.active {
+            border-bottom: 2px solid #334155;
+            color: #334155;
+            font-weight: 500;
+        }
+        .status-pending {
+            background-color: #fef08a;
+            color: #854d0e;
+        }
+        .status-in-progress {
+            background-color: #bfdbfe;
+            color: #1e40af;
+        }
+        .status-completed {
+            background-color: #bbf7d0;
+            color: #166534;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-slate-800 mb-8">Task List Wireframe</h1>
+        
+        <div class="wireframe-box">
+            <div class="wireframe-nav">
+                <div class="wireframe-nav-item">Dashboard</div>
+                <div class="wireframe-nav-item">Tasks</div>
+                <div class="wireframe-nav-item">Projects</div>
+                <div class="wireframe-nav-item">Team</div>
+                <div class="wireframe-nav-item" style="float: right;">User Profile</div>
+            </div>
+            
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-slate-700">Task List</h2>
+                <div class="wireframe-btn">+ New Task</div>
+            </div>
+            
+            <div class="wireframe-tabs">
+                <div class="wireframe-tab active">All Tasks</div>
+                <div class="wireframe-tab">Assigned to Me</div>
+                <div class="wireframe-tab">Created by Me</div>
+                <div class="wireframe-tab">Completed</div>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mb-4">
+                <div class="wireframe-btn">All Status</div>
+                <div class="wireframe-btn">All Projects</div>
+                <div class="wireframe-btn">All Priorities</div>
+                <div class="wireframe-btn">All Dates</div>
+                <div class="wireframe-btn">Sort by: Due Date</div>
+            </div>
+            
+            <!-- Task Card 1 -->
+            <div class="wireframe-card hover:bg-slate-50 transition-colors">
+                <div class="flex justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="wireframe-btn" style="padding: 2px 8px; min-width: 24px;">!</div>
+                        <div>
+                            <div class="font-medium">Design new dashboard UI</div>
+                            <div class="text-sm text-slate-500">Project: Website Redesign</div>
+                        </div>
+                    </div>
+                    <div class="text-sm flex flex-col items-end">
+                        <div class="wireframe-btn status-in-progress">In Progress</div>
+                        <div class="text-slate-500 mt-1">Due: Tomorrow</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task Card 2 -->
+            <div class="wireframe-card hover:bg-slate-50 transition-colors">
+                <div class="flex justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="wireframe-btn" style="padding: 2px 8px; min-width: 24px; background-color: #fecaca; color: #991b1b;">!!</div>
+                        <div>
+                            <div class="font-medium">Fix login authentication bug</div>
+                            <div class="text-sm text-slate-500">Project: Platform Security</div>
+                        </div>
+                    </div>
+                    <div class="text-sm flex flex-col items-end">
+                        <div class="wireframe-btn status-pending">Pending</div>
+                        <div class="text-slate-500 mt-1">Due: Dec 15</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task Card 3 -->
+            <div class="wireframe-card hover:bg-slate-50 transition-colors">
+                <div class="flex justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="wireframe-btn" style="padding: 2px 8px; min-width: 24px;">!</div>
+                        <div>
+                            <div class="font-medium">Review quarterly reports</div>
+                            <div class="text-sm text-slate-500">Project: Finance</div>
+                        </div>
+                    </div>
+                    <div class="text-sm flex flex-col items-end">
+                        <div class="wireframe-btn status-completed">Completed</div>
+                        <div class="text-slate-500 mt-1">Due: Yesterday</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task Card 4 -->
+            <div class="wireframe-card hover:bg-slate-50 transition-colors">
+                <div class="flex justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="wireframe-btn" style="padding: 2px 8px; min-width: 24px;">!</div>
+                        <div>
+                            <div class="font-medium">Prepare client presentation</div>
+                            <div class="text-sm text-slate-500">Project: Sales</div>
+                        </div>
+                    </div>
+                    <div class="text-sm flex flex-col items-end">
+                        <div class="wireframe-btn status-in-progress">In Progress</div>
+                        <div class="text-slate-500 mt-1">Due: Dec 18</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task Card 5 -->
+            <div class="wireframe-card hover:bg-slate-50 transition-colors">
+                <div class="flex justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="wireframe-btn" style="padding: 2px 8px; min-width: 24px;">!</div>
+                        <div>
+                            <div class="font-medium">Update API documentation</div>
+                            <div class="text-sm text-slate-500">Project: Developer Portal</div>
+                        </div>
+                    </div>
+                    <div class="text-sm flex flex-col items-end">
+                        <div class="wireframe-btn status-pending">Pending</div>
+                        <div class="text-slate-500 mt-1">Due: Dec 20</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between mt-4">
+                <div class="wireframe-btn">Previous</div>
+                <div class="text-slate-500">Page 1 of 5</div>
+                <div class="wireframe-btn">Next</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

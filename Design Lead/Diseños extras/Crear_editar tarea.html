@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear/Editar Tarea</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .wireframe-box {
+            border: 2px dashed #94a3b8;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .wireframe-placeholder {
+            background-color: #e2e8f0;
+            border: 1px dashed #94a3b8;
+            height: 40px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .wireframe-nav {
+            background-color: #334155;
+            color: white;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .wireframe-nav-item {
+            display: inline-block;
+            margin-right: 20px;
+            color: #e2e8f0;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-pending {
+            background-color: #fef08a;
+            color: #854d0e;
+        }
+        .status-in-progress {
+            background-color: #bfdbfe;
+            color: #1e40af;
+        }
+        .status-completed {
+            background-color: #bbf7d0;
+            color: #166534;
+        }
+        .priority-high {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .priority-medium {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+        .priority-low {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e2e8f0;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="wireframe-box">
+            <!-- Barra de navegación -->
+            <div class="wireframe-nav">
+                <div class="wireframe-nav-item">Dashboard</div>
+                <div class="wireframe-nav-item">Tareas</div>
+                <div class="wireframe-nav-item">Proyectos</div>
+                <div class="wireframe-nav-item">Equipo</div>
+                <div class="wireframe-nav-item" style="float: right;">Usuario</div>
+            </div>
+            
+            <!-- Encabezado -->
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-2xl font-bold text-slate-800">Nueva Tarea</h1>
+                <div>
+                    <button class="bg-slate-200 text-slate-700 px-4 py-2 rounded hover:bg-slate-300 transition-colors mr-2">
+                        Cancelar
+                    </button>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                        Guardar Tarea
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Formulario principal -->
+            <form class="space-y-6">
+                <!-- Sección 1: Información básica -->
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold text-slate-800 border-b pb-2">Información Básica</h2>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Título de la tarea *</label>
+                        <input type="text" class="w-full border border-slate-300 rounded p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Ej: Diseñar nueva interfaz de usuario">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                        <textarea class="w-full border border-slate-300 rounded p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" rows="4" placeholder="Describa la tarea en detalle..."></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Proyecto *</label>
+                            <select class="w-full border border-slate-300 rounded p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                <option value="">Seleccionar proyecto</option>
+                                <option value="1">Rediseño de Plataforma</option>
+                                <option value="2">Aplicación Móvil</option>
+                                <option value="3">Portal del Cliente</option>
+                                <option value="4">Sistema Interno</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Estado *</label>
+                            <select class="w-full border border-slate-300 rounded p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                <option value="pending">Pendiente</option>
+                                <option value="in-progress">En Progreso</option>
+                                <option value="completed">Completado</option>
+                                <option value="on-hold">En Espera</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección 2: Fechas y prioridad -->
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold text-slate-800 border-b pb-2">Tiempo y Prioridad</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Fecha de inicio</label>
+                            <input type="date" class="w-full border border-slate-300 rounded p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Fecha de vencimiento *</label>
+                            <input type="date" class="w-full border border-slate-300 rounded p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Prioridad *</label>
+                            <select class="w-full border border-slate-300 rounded p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                <option value="low">Baja</option>
+                                <option value="medium" selected>Media</option>
+                                <option value="high">Alta</option>
+                                <option value="critical">Crítica</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Etiquetas</label>
+                        <div class="flex flex-wrap items-center gap-2 border border-slate-300 rounded p-2 min-h-10">
+                            <span class="tag">UI <button type="button" class="ml-1 text-slate-500 hover:text-slate-700">×</button></span>
+                            <span class="tag">Diseño <button type="button" class="ml-1 text-slate-500 hover:text-slate-700">×</button></span>
+                            <input type="text" class="flex-1 min-w-[100px] border-none focus:ring-0" placeholder="Añadir etiqueta...">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección 3: Asignación -->
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold text-slate-800 border-b pb-2">Asignación</h2>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Asignar a</label>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="flex items-center gap-2 bg-blue-100 rounded-full px-3 py-1">
+                                <div class="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 text-xs font-medium">JD</div>
+                                <span class="text-sm">Juan Díaz</span>
+                                <button type="button" class="text-blue-500 hover:text-blue-700">×</button>
+                            </div>
+                            <div class="flex items-center gap-2 bg-purple-100 rounded-full px-3 py-1">
+                                <div class="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 text-xs font-medium">SM</div>
+                                <span class="text-sm">Sarah Miller</span>
+                                <button type="button" class="text-purple-500 hover:text-purple-700">×</button>
+                            </div>
+                            <button type="button" class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Añadir persona
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Notificar a</label>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="flex items-center gap-2 bg-green-100

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Proyectos y Usuarios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .wireframe-nav {
+            background-color: #334155;
+            color: white;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .wireframe-nav-item {
+            display: inline-block;
+            margin-right: 20px;
+            color: #e2e8f0;
+        }
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+        .status-active {
+            background-color: #bbf7d0;
+            color: #166534;
+        }
+        .status-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 9999px;
+            padding: 2px 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Navigation Bar -->
+        <div class="wireframe-nav">
+            <div class="wireframe-nav-item">Dashboard</div>
+            <div class="wireframe-nav-item">Tareas</div>
+            <div class="wireframe-nav-item">Proyectos</div>
+            <div class="wireframe-nav-item">Equipo</div>
+            <div class="wireframe-nav-item" style="float: right;">Mi Perfil</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <!-- Header with Tabs -->
+            <div class="border-b border-slate-200">
+                <div class="px-6 py-4 flex justify-between items-center">
+                    <h1 class="text-2xl font-bold text-slate-800">Gestión</h1>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Nuevo
+                    </button>
+                </div>
+                <div class="flex border-b border-slate-200">
+                    <button id="projects-tab" class="px-6 py-3 font-medium tab-active">Proyectos</button>
+                    <button id="users-tab" class="px-6 py-3 font-medium text-slate-500">Usuarios</button>
+                    <button id="teams-tab" class="px-6 py-3 font-medium text-slate-500">Equipos</button>
+                </div>
+            </div>
+
+            <!-- Projects Tab Content (Visible by default) -->
+            <div id="projects-content" class="p-6">
+                <!-- Search and Filters -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div class="relative w-full md:w-64">
+                        <input type="text" placeholder="Buscar proyectos..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 absolute left-3 top-2.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="flex gap-2">
+                        <select class="border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option>Todos los estados</option>
+                            <option>Activo</option>
+                            <option>En pausa</option>
+                            <option>Completado</option>
+                            <option>Archivado</option>
+                        </select>
+                        <button class="flex items-center gap-1 border border-slate-300 rounded-md px-3 py-2 text-sm hover:bg-slate-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                            Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Projects Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Líder</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Equipo</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha inicio</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha fin</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            <!-- Project 1 -->
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-medium text-slate-900">Rediseño de Plataforma</div>
+                                    <div class="text-sm text-slate-500">Plataforma web principal</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium">JD</div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-medium text-slate-900">Juan Díaz</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Diseño</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="badge status-active">Activo</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">15/03/2023</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">30/06/2023</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Editar</button>
+                                    <button class="text-red-600 hover:text-red-900">Archivar</button>
+                                </td>
+                            </tr>
+
+                            <!-- Project 2 -->
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-medium text-slate-900">Aplicación Móvil</div>
+                                    <div class="text-sm text-slate-500">Nueva app para clientes</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-medium">SM</div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-medium text-slate-900">Sarah Miller</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Desarrollo</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="badge status-active">Activo</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">01/02/2023</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">15/09/2023</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Editar</button>
+                                    <button class="text-red-600 hover:text-red-900">Archivar</button>
+                                </td>
+                            </tr>
+
+                            <!-- Project 3 -->
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-medium text-slate-900">Sistema de Tickets</div>
+                                    <div class="text-sm text-slate-500">Soporte interno</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-medium">AC</div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-medium text-slate-900">Alex Chen</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Soporte</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="badge status-inactive">En pausa</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">10/01/2023</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">-</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Editar</button>
+                                    <button class="text-red-600 hover:text-red-900">Archivar</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex items-center justify-between mt-6">
+                    <div class="text-sm text-slate-500">
+                        Mostrando <span class="font-medium">1</span> a <span class="font-medium">3</span> de <span class="font-medium">8</span> proyectos
+                    </div>
+                    <div class="flex gap-1">
+                        <button class="px-3 py-1 rounded-md border border-slate-300 text-slate-500 hover:bg-slate-50">&laquo;</button>
+                        <button class="px-3 py-1 rounded-md border border-slate-300 bg-blue-600 text-white">1</button>
+                        <button class="px-3 py-1 rounded-md border border-slate-300 text-slate-500 hover:bg-slate-50">2</button>
+                        <button class="px-3 py-1 rounded-md border border-slate-300 text-slate-500 hover:bg-slate-50">3</button>
+                        <button class="px-3 py-1 rounded-md border border-slate-300 text-slate-500 hover:bg-slate-50">&raquo;</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab Content (Hidden by default) -->
+            <div id="users-content" class="p-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div class="relative w-full md:w-64">
+                        <input type="text" placeholder="Buscar usuarios..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 absolute left-3 top-2.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="flex gap-2">
+                        <select class="border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option>Todos los roles</option>
+                            <option>Administrador</option>
+                            <option>Gerente</option>
+                            <option>Colaborador</option>
+                            <option>Cliente</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Usuario</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Correo</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Rol</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Último acceso</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            <!-- User 1 -->
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium">JD</div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-slate-900">Juan Díaz</div>
+                                            <div class="text-sm text-slate-500">@juandiaz</div>
+                                        </div>
+                                    </div>
+                               
