@@ -6,6 +6,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ProfileController;  // AGREGADO
 
 // ============================================
 // RUTAS PÚBLICAS
@@ -91,16 +92,18 @@ Route::middleware(['auth'])->group(function () {
     });
     
     // ============================================
-    // RUTAS DE PERFIL Y CONFIGURACIÓN
+    // RUTAS DE PERFIL Y CONFIGURACIÓN - ACTUALIZADO
     // ============================================
     Route::prefix('profile')->name('profile.')->group(function () {
-        Route::get('/', function () {
-            return view('profile.show');
-        })->name('show');
+        Route::get('/', [ProfileController::class, 'show'])->name('show');
+        Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
+        Route::put('/update', [ProfileController::class, 'update'])->name('update');
+        Route::delete('/delete', [ProfileController::class, 'destroy'])->name('delete');
         
-        Route::get('/edit', function () {
-            return view('profile.edit');
-        })->name('edit');
+        // Rutas adicionales para el perfil
+        Route::post('/upload-document', [ProfileController::class, 'uploadDocument'])->name('upload-document');
+        Route::delete('/document/{document}', [ProfileController::class, 'deleteDocument'])->name('delete-document');
+        Route::patch('/preferences', [ProfileController::class, 'updatePreferences'])->name('update-preferences');
     });
     
     // ============================================
@@ -180,6 +183,10 @@ if (app()->environment('local')) {
         Route::get('/seed-data', function () {
             // Crear datos de prueba rápido
             $user = auth()->user();
+            
+            if (!$user) {
+                return redirect()->route('login')->with('error', 'Debes iniciar sesión primero');
+            }
             
             $project = App\Models\Project::create([
                 'title' => 'Proyecto de Prueba',
