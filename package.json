@@ -3,8 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build": "npx vite build",
+        "dev": "npx vite"
     },
     "devDependencies": {
         "@popperjs/core": "^2.11.6",
