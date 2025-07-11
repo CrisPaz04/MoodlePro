@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\Project;
+use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -45,7 +47,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Guardar nueva tarea
+     * Guardar nueva tarea (CON NOTIFICACIONES)
      */
     public function store(Request $request)
     {
@@ -83,6 +85,36 @@ class TaskController extends Controller
                           ->max('order') + 1
         ]);
 
+        // NOTIFICACIÓN: Al usuario asignado
+        if ($task->assigned_to && $task->assigned_to !== Auth::id()) {
+            $assignedUser = User::find($task->assigned_to);
+            if ($assignedUser) {
+                $assignedUser->notifyTaskAssigned($task);
+            }
+        }
+
+        // NOTIFICACIÓN: A todos los miembros del proyecto sobre la nueva tarea
+        $project->members()
+            ->where('user_id', '!=', Auth::id()) // Excepto al creador
+            ->where('user_id', '!=', $task->assigned_to) // Y al asignado (ya fue notificado)
+            ->get()
+            ->each(function ($member) use ($task, $project) {
+                Notification::create([
+                    'user_id' => $member->id,
+                    'type' => 'task_created',
+                    'title' => 'Nueva tarea en proyecto',
+                    'message' => 'Se creó la tarea ":task_title" en el proyecto :project_title',
+                    'data' => [
+                        'task_title' => $task->title,
+                        'project_title' => $project->title,
+                        'created_by' => Auth::user()->name,
+                    ],
+                    'related_type' => Task::class,
+                    'related_id' => $task->id,
+                    'action_url' => route('projects.show', $project),
+                ]);
+            });
+
         return redirect()->route('projects.show', $request->project_id)
             ->with('success', 'Tarea creada exitosamente');
     }
@@ -118,7 +150,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Actualizar tarea
+     * Actualizar tarea (CON NOTIFICACIONES)
      */
     public function update(Request $request, Task $task)
     {
@@ -142,9 +174,44 @@ class TaskController extends Controller
             return back()->withErrors(['assigned_to' => 'El usuario asignado debe ser miembro del proyecto']);
         }
 
+        // Guardar valores anteriores para comparación
+        $oldAssignedTo = $task->assigned_to;
+        $oldStatus = $task->status;
+
         $task->update($request->only([
             'title', 'description', 'priority', 'assigned_to', 'due_date', 'status'
         ]));
+
+        // NOTIFICACIÓN: Si se cambió la asignación
+        if ($oldAssignedTo != $task->assigned_to && $task->assigned_to) {
+            $assignedUser = User::find($task->assigned_to);
+            if ($assignedUser && $task->assigned_to !== Auth::id()) {
+                $assignedUser->notifyTaskAssigned($task);
+            }
+        }
+
+        // NOTIFICACIÓN: Si la tarea se completó
+        if ($oldStatus !== 'done' && $task->status === 'done') {
+            // Notificar al creador del proyecto
+            if ($project->creator_id !== Auth::id()) {
+                $project->creator->notify(
+                    'Tarea completada',
+                    'La tarea "' . $task->title . '" ha sido completada por ' . Auth::user()->name,
+                    Notification::TYPE_TASK_COMPLETED,
+                    route('tasks.show', $task)
+                );
+            }
+
+            // Notificar al creador de la tarea si es diferente
+            if ($task->created_by !== Auth::id() && $task->created_by !== $project->creator_id) {
+                User::find($task->created_by)?->notify(
+                    'Tu tarea fue completada',
+                    Auth::user()->name . ' completó la tarea "' . $task->title . '"',
+                    Notification::TYPE_TASK_COMPLETED,
+                    route('tasks.show', $task)
+                );
+            }
+        }
 
         return redirect()->route('projects.show', $task->project_id)
             ->with('success', 'Tarea actualizada exitosamente');
@@ -177,7 +244,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Actualizar estado de tarea (API para Kanban)
+     * Actualizar estado de tarea (API para Kanban) - CON NOTIFICACIONES
      */
     public function updateStatus(Request $request, Task $task)
     {
@@ -193,8 +260,35 @@ class TaskController extends Controller
         
         $oldStatus = $task->status;
         $task->update(['status' => $request->status]);
+
+        // NOTIFICACIONES: Según cambios de estado
+        if ($oldStatus !== $request->status) {
+            // Si se marca como completada
+            if ($request->status === 'done' && $task->assigned_to !== Auth::id()) {
+                User::find($task->assigned_to)?->notify(
+                    'Tarea completada',
+                    'Tu tarea "' . $task->title . '" fue marcada como completada',
+                    Notification::TYPE_TASK_COMPLETED,
+                    route('projects.show', $project)
+                );
+            }
+
+            // Si se mueve a en progreso
+            if ($oldStatus === 'todo' && $request->status === 'in_progress') {
+                // Notificar al creador de la tarea
+                if ($task->created_by !== Auth::id()) {
+                    User::find($task->created_by)?->notify(
+                        'Tarea en progreso',
+                        Auth::user()->name . ' comenzó a trabajar en "' . $task->title . '"',
+                        'task_progress',
+                        route('projects.show', $project)
+                    );
+                }
+            }
+        }
         
-        // Log de actividad (opcional)
+        // Log de actividad (opcional - comentado porque requiere spatie/laravel-activitylog)
+        /*
         activity()
             ->performedOn($task)
             ->causedBy(Auth::user())
@@ -203,6 +297,7 @@ class TaskController extends Controller
                 'new_status' => $request->status
             ])
             ->log('Cambió el estado de la tarea');
+        */
         
         return response()->json([
             'success' => true,
@@ -267,7 +362,8 @@ class TaskController extends Controller
         
         $task->save();
         
-        // Log de actividad (opcional)
+        // Log de actividad (opcional - comentado porque requiere spatie/laravel-activitylog)
+        /*
         if ($oldStatus !== $task->status || $oldOrder !== $task->order) {
             activity()
                 ->performedOn($task)
@@ -280,6 +376,7 @@ class TaskController extends Controller
                 ])
                 ->log('Movió la tarea en el tablero');
         }
+        */
         
         return response()->json([
             'success' => true,
