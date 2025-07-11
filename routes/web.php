@@ -6,7 +6,8 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ProfileController;  // AGREGADO
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NotificationController;
 
 // ============================================
 // RUTAS PÚBLICAS
@@ -92,7 +93,39 @@ Route::middleware(['auth'])->group(function () {
     });
     
     // ============================================
-    // RUTAS DE PERFIL Y CONFIGURACIÓN - ACTUALIZADO
+    // RUTAS DE NOTIFICACIONES
+    // ============================================
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        // Vista principal de notificaciones
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        
+        // Marcar como leída
+        Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-multiple-read', [NotificationController::class, 'markMultipleAsRead'])->name('mark-multiple-read');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        
+        // Eliminar notificaciones
+        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
+        Route::post('/destroy-multiple', [NotificationController::class, 'destroyMultiple'])->name('destroy-multiple');
+        Route::post('/clear-read', [NotificationController::class, 'clearRead'])->name('clear-read');
+        
+        // APIs para AJAX
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+        Route::get('/recent', [NotificationController::class, 'recent'])->name('recent');
+        Route::get('/grouped', [NotificationController::class, 'grouped'])->name('grouped');
+        Route::get('/stats', [NotificationController::class, 'stats'])->name('stats');
+        
+        // Preferencias
+        Route::patch('/preferences', [NotificationController::class, 'updatePreferences'])->name('update-preferences');
+        
+        // Notificación de prueba (solo desarrollo)
+        if (app()->environment('local')) {
+            Route::post('/test', [NotificationController::class, 'test'])->name('test');
+        }
+    });
+    
+    // ============================================
+    // RUTAS DE PERFIL Y CONFIGURACIÓN
     // ============================================
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'show'])->name('show');
@@ -135,18 +168,6 @@ Route::middleware(['auth'])->group(function () {
         
         return view('search.results', compact('query', 'projects', 'tasks', 'resources'));
     })->name('search');
-    
-    // Notificaciones (futuro)
-    Route::prefix('notifications')->name('notifications.')->group(function () {
-        Route::get('/', function () {
-            return view('notifications.index');
-        })->name('index');
-        
-        Route::post('/mark-read', function () {
-            // Implementar más tarde
-            return response()->json(['success' => true]);
-        })->name('mark-read');
-    });
 });
 
 // ============================================
@@ -177,6 +198,7 @@ if (app()->environment('local')) {
                 'messages' => App\Models\Message::count(),
                 'resources' => App\Models\Resource::count(),
                 'users' => App\Models\User::count(),
+                'notifications' => App\Models\Notification::count(),
             ];
         });
         
@@ -202,7 +224,7 @@ if (app()->environment('local')) {
                 'joined_at' => now()
             ]);
             
-            App\Models\Task::create([
+            $task = App\Models\Task::create([
                 'project_id' => $project->id,
                 'title' => 'Tarea de ejemplo',
                 'description' => 'Esta es una tarea de prueba',
@@ -213,8 +235,11 @@ if (app()->environment('local')) {
                 'due_date' => now()->addDays(7)
             ]);
             
+            // Crear notificación de prueba
+            $user->notifyTaskAssigned($task);
+            
             return redirect()->route('projects.show', $project)
-                ->with('success', 'Datos de prueba creados');
+                ->with('success', 'Datos de prueba creados con notificación');
         });
     });
 }
