@@ -357,7 +357,7 @@
     @stack('styles')
 </head>
 <body>
-    <div class="d-flex">
+    <div>
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <a href="{{ route('dashboard') }}" class="sidebar-brand">
@@ -434,7 +434,7 @@
                         <small class="storage-text">60% de almacenamiento usado</small>
                     </div>
                     <button class="btn btn-upgrade">
-                        <i class="fas fa-crown me-2"></i>Actualizar Plan
+                        <i class="fas fa-crown me-2"></i>Necesitas más espacio?
                     </button>
                 </div>
             </div>
