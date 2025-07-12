@@ -349,7 +349,7 @@
             </a>
             <button class="btn-profile btn-upgrade">
                 <i class="fas fa-crown"></i>
-                Actualizar Plan
+                Necesitas más espacio?
             </button>
         </div>
     </div>
