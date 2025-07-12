@@ -8,59 +8,59 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 trait HasNotifications
 {
     /**
-     * Obtener todas las notificaciones del usuario
+     * Obtener todas las notificaciones personalizadas del usuario
      */
-    public function notifications(): HasMany
+    public function customNotifications(): HasMany
     {
         return $this->hasMany(Notification::class)->latest();
     }
 
     /**
-     * Obtener notificaciones no leídas
+     * Obtener notificaciones no leídas personalizadas
      */
-    public function unreadNotifications(): HasMany
+    public function customUnreadNotifications(): HasMany
     {
-        return $this->notifications()->unread();
+        return $this->customNotifications()->unread();
     }
 
     /**
-     * Obtener notificaciones leídas
+     * Obtener notificaciones leídas personalizadas
      */
-    public function readNotifications(): HasMany
+    public function customReadNotifications(): HasMany
     {
-        return $this->notifications()->read();
+        return $this->customNotifications()->read();
     }
 
     /**
-     * Obtener el conteo de notificaciones no leídas
+     * Obtener el conteo de notificaciones no leídas personalizadas
      */
-    public function getUnreadNotificationsCountAttribute(): int
+    public function getCustomUnreadNotificationsCountAttribute(): int
     {
-        return $this->unreadNotifications()->count();
+        return $this->customUnreadNotifications()->count();
     }
 
     /**
-     * Verificar si tiene notificaciones no leídas
+     * Verificar si tiene notificaciones no leídas personalizadas
      */
-    public function hasUnreadNotifications(): bool
+    public function hasCustomUnreadNotifications(): bool
     {
-        return $this->unreadNotifications()->exists();
+        return $this->customUnreadNotifications()->exists();
     }
 
     /**
      * Marcar todas las notificaciones como leídas
      */
-    public function markAllNotificationsAsRead(): int
+    public function markAllCustomNotificationsAsRead(): int
     {
-        return $this->unreadNotifications()->update(['read_at' => now()]);
+        return $this->customUnreadNotifications()->update(['read_at' => now()]);
     }
 
     /**
      * Marcar notificaciones específicas como leídas
      */
-    public function markNotificationsAsRead(array $notificationIds): int
+    public function markCustomNotificationsAsRead(array $notificationIds): int
     {
-        return $this->notifications()
+        return $this->customNotifications()
             ->whereIn('id', $notificationIds)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
@@ -69,17 +69,17 @@ trait HasNotifications
     /**
      * Eliminar todas las notificaciones leídas
      */
-    public function deleteReadNotifications(): int
+    public function deleteCustomReadNotifications(): int
     {
-        return $this->readNotifications()->delete();
+        return $this->customReadNotifications()->delete();
     }
 
     /**
      * Eliminar notificaciones antiguas (más de X días)
      */
-    public function deleteOldNotifications(int $days = 30): int
+    public function deleteOldCustomNotifications(int $days = 30): int
     {
-        return $this->notifications()
+        return $this->customNotifications()
             ->where('created_at', '<', now()->subDays($days))
             ->delete();
     }
@@ -87,7 +87,7 @@ trait HasNotifications
     /**
      * Notificar al usuario sobre una tarea asignada
      */
-    public function notifyTaskAssigned($task): Notification
+    public function sendTaskAssignedNotification($task): Notification
     {
         return Notification::taskAssigned($this, $task);
     }
@@ -95,7 +95,7 @@ trait HasNotifications
     /**
      * Notificar al usuario sobre un proyecto próximo a vencer
      */
-    public function notifyProjectDeadline($project, $daysRemaining): Notification
+    public function sendProjectDeadlineNotification($project, $daysRemaining): Notification
     {
         return Notification::projectDeadlineApproaching($this, $project, $daysRemaining);
     }
@@ -103,7 +103,7 @@ trait HasNotifications
     /**
      * Notificar al usuario sobre un nuevo miembro en el proyecto
      */
-    public function notifyProjectMemberAdded($project, $newMember): Notification
+    public function sendProjectMemberAddedNotification($project, $newMember): Notification
     {
         return Notification::projectMemberAdded($this, $project, $newMember);
     }
@@ -111,7 +111,7 @@ trait HasNotifications
     /**
      * Notificar al usuario sobre un mensaje recibido
      */
-    public function notifyMessageReceived($message): Notification
+    public function sendMessageReceivedNotification($message): Notification
     {
         return Notification::messageReceived($this, $message);
     }
@@ -119,7 +119,7 @@ trait HasNotifications
     /**
      * Enviar una notificación genérica
      */
-    public function notify($title, $message, $type = 'info', $actionUrl = null): Notification
+    public function sendCustomNotification($title, $message, $type = 'info', $actionUrl = null): Notification
     {
         return Notification::generic($this, $title, $message, $type, $actionUrl);
     }
@@ -127,14 +127,14 @@ trait HasNotifications
     /**
      * Obtener notificaciones agrupadas por fecha
      */
-    public function getNotificationsGroupedByDate()
+    public function getCustomNotificationsGroupedByDate()
     {
-        return $this->notifications()
+        return $this->customNotifications()
             ->latest()
             ->get()
             ->groupBy(function ($notification) {
                 $date = $notification->created_at;
-                
+
                 if ($date->isToday()) {
                     return 'Hoy';
                 } elseif ($date->isYesterday()) {
@@ -152,23 +152,23 @@ trait HasNotifications
     /**
      * Obtener notificaciones paginadas
      */
-    public function getNotificationsPaginated($perPage = 20)
+    public function getCustomNotificationsPaginated($perPage = 20)
     {
-        return $this->notifications()->paginate($perPage);
+        return $this->customNotifications()->paginate($perPage);
     }
 
     /**
      * Obtener notificaciones por tipo
      */
-    public function getNotificationsByType($type)
+    public function getCustomNotificationsByType($type)
     {
-        return $this->notifications()->ofType($type)->get();
+        return $this->customNotifications()->ofType($type)->get();
     }
 
     /**
      * Configurar preferencias de notificación (para futuro)
      */
-    public function notificationPreferences()
+    public function customNotificationPreferences()
     {
         return [
             'email_notifications' => $this->email_notifications ?? true,
@@ -182,11 +182,10 @@ trait HasNotifications
     /**
      * Verificar si el usuario quiere recibir un tipo específico de notificación
      */
-    public function wantsNotification($type): bool
+    public function wantsCustomNotification($type): bool
     {
-        $preferences = $this->notificationPreferences();
-        
-        // Mapear tipos de notificación a preferencias
+        $preferences = $this->customNotificationPreferences();
+
         $typeToPreference = [
             Notification::TYPE_TASK_ASSIGNED => 'task_notifications',
             Notification::TYPE_TASK_COMPLETED => 'task_notifications',
@@ -199,21 +198,21 @@ trait HasNotifications
         ];
 
         $preference = $typeToPreference[$type] ?? 'email_notifications';
-        
+
         return $preferences[$preference] ?? true;
     }
 
     /**
      * Obtener resumen de notificaciones para el dashboard
      */
-    public function getNotificationsSummary()
+    public function getCustomNotificationsSummary()
     {
-        $unreadCount = $this->unreadNotifications()->count();
-        $todayCount = $this->notifications()
+        $unreadCount = $this->customUnreadNotifications()->count();
+        $todayCount = $this->customNotifications()
             ->whereDate('created_at', today())
             ->count();
-        
-        $recentNotifications = $this->notifications()
+
+        $recentNotifications = $this->customNotifications()
             ->with('related')
             ->limit(5)
             ->get();
