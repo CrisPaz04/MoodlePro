@@ -140,8 +140,8 @@
             margin-bottom: 1.5rem;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
 
         .topbar-left {
@@ -156,25 +156,11 @@
             font-size: 1.25rem;
             color: var(--secondary-color);
             cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 0.35rem;
-            transition: all 0.3s;
-        }
-
-        .sidebar-toggle:hover {
-            background-color: var(--light-color);
-            color: var(--primary-color);
         }
 
         .search-bar {
             position: relative;
             width: 300px;
-        }
-
-        .search-bar input {
-            padding-left: 2.5rem;
-            border-radius: 2rem;
-            border: 1px solid #e3e6f0;
         }
 
         .search-bar i {
@@ -183,6 +169,14 @@
             top: 50%;
             transform: translateY(-50%);
             color: var(--secondary-color);
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            border: 1px solid #e3e6f0;
+            border-radius: 0.35rem;
+            font-size: 0.875rem;
         }
 
         .topbar-right {
@@ -194,12 +188,11 @@
         .topbar-icon-btn {
             background: none;
             border: none;
-            font-size: 1.125rem;
-            color: var(--secondary-color);
             padding: 0.5rem;
             border-radius: 0.35rem;
-            position: relative;
+            color: var(--secondary-color);
             cursor: pointer;
+            position: relative;
             transition: all 0.3s;
         }
 
@@ -214,9 +207,13 @@
             right: 0;
             background-color: var(--danger-color);
             color: white;
-            font-size: 0.625rem;
-            padding: 0.125rem 0.375rem;
-            border-radius: 1rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
             font-weight: 600;
         }
 
@@ -238,7 +235,12 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            object-fit: cover;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
         }
 
         .user-name {
@@ -270,23 +272,6 @@
         .storage-text {
             font-size: 0.75rem;
             color: var(--secondary-color);
-        }
-
-        .btn-upgrade {
-            width: 100%;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.35rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-upgrade:hover {
-            background-color: #4e73df;
-            transform: translateY(-1px);
         }
 
         /* Responsive */
@@ -422,6 +407,31 @@
                     <i class="fas fa-upload"></i>
                     <span>Subir Recurso</span>
                 </a>
+
+                <!-- Communication Section -->
+                <div class="nav-section-title">
+                    <i class="fas fa-comments"></i>
+                    <span>Comunicación</span>
+                </div>
+                
+                <a href="{{ route('notifications.index') }}" class="nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                    <i class="fas fa-bell"></i>
+                    <span>Notificaciones</span>
+                    @if(isset($unreadNotifications) && $unreadNotifications > 0)
+                        <span class="badge bg-danger ms-auto">{{ $unreadNotifications }}</span>
+                    @endif
+                </a>
+                
+                <!-- Profile Section -->
+                <div class="nav-section-title">
+                    <i class="fas fa-user"></i>
+                    <span>Personal</span>
+                </div>
+                
+                <a href="{{ route('profile.show') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Mi Perfil</span>
+                </a>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -433,9 +443,6 @@
                         </div>
                         <small class="storage-text">60% de almacenamiento usado</small>
                     </div>
-                    <button class="btn btn-upgrade">
-                        <i class="fas fa-crown me-2"></i>Necesitas más espacio?
-                    </button>
                 </div>
             </div>
         </aside>
@@ -466,53 +473,41 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><h6 class="dropdown-header">Notificaciones</h6></li>
-                            <li><a class="dropdown-item" href="#">
+                            <li><a class="dropdown-item" href="{{ route('notifications.index') }}">
                                 <i class="fas fa-tasks text-primary me-2"></i>
                                 Nueva tarea asignada
                             </a></li>
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-comment text-info me-2"></i>
-                                Nuevo mensaje en proyecto
-                            </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center" href="#">Ver todas</a></li>
+                            <li><a class="dropdown-item" href="{{ route('notifications.index') }}">Ver todas las notificaciones</a></li>
                         </ul>
                     </div>
 
                     <!-- Messages -->
-                    <button class="topbar-icon-btn" type="button">
-                        <i class="fas fa-envelope"></i>
-                        @if(isset($unreadMessages) && $unreadMessages > 0)
-                            <span class="notification-badge">{{ $unreadMessages }}</span>
-                        @endif
-                    </button>
+                    <div class="dropdown">
+                        <button class="topbar-icon-btn" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-envelope"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Mensajes</h6></li>
+                            <li><a class="dropdown-item" href="#">No hay mensajes nuevos</a></li>
+                        </ul>
+                    </div>
 
                     <!-- User Menu -->
                     <div class="dropdown">
                         <div class="user-info" data-bs-toggle="dropdown">
-                            @if(Auth::check())
-                                <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=4e73df&color=fff" 
-                                     alt="{{ Auth::user()->name }}" 
-                                     class="user-avatar">
-                                <div class="d-none d-md-block">
-                                    <p class="user-name">{{ Auth::user()->name }}</p>
-                                </div>
-                            @else
-                                <img src="https://ui-avatars.com/api/?name=U&background=4e73df&color=fff" 
-                                     alt="Usuario" 
-                                     class="user-avatar">
-                                <div class="d-none d-md-block">
-                                    <p class="user-name">Usuario</p>
-                                </div>
-                            @endif
-                            <i class="fas fa-chevron-down ms-1 text-secondary"></i>
+                            <div class="user-avatar">
+                                {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
+                            </div>
+                            <div>
+                                <p class="user-name">{{ auth()->user()->name ?? 'Usuario' }}</p>
+                            </div>
                         </div>
-                        
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ route('profile.show') }}">
                                 <i class="fas fa-user me-2"></i>Mi Perfil
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ route('profile.edit') }}">
+                            <li><a class="dropdown-item" href="#">
                                 <i class="fas fa-cog me-2"></i>Configuración
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
