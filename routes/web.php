@@ -113,6 +113,33 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/upload-document', [ProfileController::class, 'uploadDocument'])->name('uploadDocument');
         Route::delete('/document/{document}', [ProfileController::class, 'deleteDocument'])->name('deleteDocument');
     });
+    
+    // ============================================
+    // BÚSQUEDA GLOBAL
+    // ============================================
+    Route::get('/search', function (Illuminate\Http\Request $request) {
+        $query = $request->get('q');
+        
+        if (!$query) {
+            return redirect()->back();
+        }
+        
+        $projects = auth()->user()->projects()
+            ->where('title', 'like', "%{$query}%")
+            ->orWhere('description', 'like', "%{$query}%")
+            ->get();
+            
+        $tasks = auth()->user()->assignedTasks()
+            ->where('title', 'like', "%{$query}%")
+            ->orWhere('description', 'like', "%{$query}%")
+            ->get();
+            
+        $resources = App\Models\Resource::where('title', 'like', "%{$query}%")
+            ->orWhere('description', 'like', "%{$query}%")
+            ->get();
+        
+        return view('search.results', compact('query', 'projects', 'tasks', 'resources'));
+    })->name('search');
 });
 
 // ============================================

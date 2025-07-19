@@ -23,29 +23,55 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
         
-        // Obtener todas las notificaciones del usuario ordenadas por fecha
-        $notifications = $user->notifications()
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        // Filtros
+        $filter = $request->get('filter', 'all'); // all, unread, read
+        $type = $request->get('type'); // tipo específico de notificación
         
-        // Estadísticas básicas
+        // Construir query
+        $query = $user->notifications();
+        
+        // Aplicar filtros
+        if ($filter === 'unread') {
+            $query->unread();
+        } elseif ($filter === 'read') {
+            $query->read();
+        }
+        
+        if ($type) {
+            $query->ofType($type);
+        }
+        
+        // Obtener notificaciones paginadas
+        $notifications = $query->with('related')->paginate(20);
+        
+        // Estadísticas
         $stats = [
             'total' => $user->notifications()->count(),
-            'unread' => $user->notifications()->whereNull('read_at')->count(),
+            'unread' => $user->unreadNotifications()->count(),
             'today' => $user->notifications()->whereDate('created_at', today())->count(),
         ];
         
-        return view('notifications.index', compact('notifications', 'stats'));
+        // Si es petición AJAX, devolver JSON
+        if ($request->ajax()) {
+            return response()->json([
+                'notifications' => $notifications,
+                'stats' => $stats,
+            ]);
+        }
+        
+        return view('notifications.index', compact('notifications', 'stats', 'filter', 'type'));
     }
 
     /**
      * Marcar una notificación como leída
      */
-    public function markAsRead($id)
+
+    public function markAsRead(Notification $notification)
     {
-        $notification = Notification::where('user_id', Auth::id())
-            ->where('id', $id)
-            ->firstOrFail();
+        // Verificar que la notificación pertenece al usuario
+        if ($notification->user_id !== Auth::id()) {
+            abort(403, 'No autorizado');
+        }
         
         $notification->markAsRead();
         
@@ -55,20 +81,22 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
-     * Marcar una notificación como no leída
+
+     * Marcar múltiples notificaciones como leídas
      */
-    public function markAsUnread($id)
+    public function markMultipleAsRead(Request $request)
     {
-        $notification = Notification::where('user_id', Auth::id())
-            ->where('id', $id)
-            ->firstOrFail();
+        $request->validate([
+            'notification_ids' => 'required|array',
+            'notification_ids.*' => 'exists:notifications,id',
+        ]);
         
-        $notification->markAsUnread();
+        $count = Auth::user()->markNotificationsAsRead($request->notification_ids);
         
         return response()->json([
             'success' => true,
-            'message' => 'Notificación marcada como no leída',
+            'message' => "{$count} notificaciones marcadas como leídas",
+            'count' => $count,
         ]);
     }
 
@@ -77,24 +105,24 @@ class NotificationController extends Controller
      */
     public function markAllAsRead()
     {
-        Auth::user()->notifications()
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $count = Auth::user()->markAllNotificationsAsRead();
         
         return response()->json([
             'success' => true,
             'message' => 'Todas las notificaciones marcadas como leídas',
+            'count' => $count,
         ]);
     }
 
     /**
      * Eliminar una notificación
      */
-    public function destroy($id)
+    public function destroy(Notification $notification)
     {
-        $notification = Notification::where('user_id', Auth::id())
-            ->where('id', $id)
-            ->firstOrFail();
+        // Verificar que la notificación pertenece al usuario
+        if ($notification->user_id !== Auth::id()) {
+            abort(403, 'No autorizado');
+        }
         
         $notification->delete();
         
@@ -104,30 +132,50 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
-     * Eliminar todas las notificaciones
+     * Eliminar múltiples notificaciones
      */
-    public function clearAll()
+    public function destroyMultiple(Request $request)
     {
-        Auth::user()->notifications()->delete();
+        $request->validate([
+            'notification_ids' => 'required|array',
+            'notification_ids.*' => 'exists:notifications,id',
+        ]);
+        
+        $count = Auth::user()->notifications()
+            ->whereIn('id', $request->notification_ids)
+            ->delete();
         
         return response()->json([
             'success' => true,
-            'message' => 'Todas las notificaciones eliminadas',
+            'message' => "{$count} notificaciones eliminadas",
+            'count' => $count,
         ]);
     }
 
     /**
-     * Obtener conteo de notificaciones no leídas (para el badge del header)
+     * Eliminar todas las notificaciones leídas
+     */
+    public function clearRead()
+    {
+        $count = Auth::user()->deleteReadNotifications();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} notificaciones leídas eliminadas",
+            'count' => $count,
+        ]);
+    }
+
+    /**
+     * Obtener conteo de notificaciones no leídas (para polling)
      */
     public function unreadCount()
     {
-        $count = Auth::user()->notifications()
-            ->whereNull('read_at')
-            ->count();
+        $count = Auth::user()->unreadNotificationsCount;
         
         return response()->json([
             'count' => $count,
+            'has_unread' => $count > 0,
         ]);
     }
 
@@ -137,7 +185,7 @@ class NotificationController extends Controller
     public function recent()
     {
         $notifications = Auth::user()->notifications()
-            ->orderBy('created_at', 'desc')
+            ->with('related')
             ->limit(5)
             ->get()
             ->map(function ($notification) {
@@ -156,32 +204,125 @@ class NotificationController extends Controller
         
         return response()->json([
             'notifications' => $notifications,
+            'unread_count' => Auth::user()->unreadNotificationsCount,
         ]);
     }
 
     /**
-     * Crear notificación de prueba (solo desarrollo)
+     * Obtener notificaciones agrupadas por fecha
      */
+    public function grouped()
+    {
+        $grouped = Auth::user()->getNotificationsGroupedByDate();
+        
+        return response()->json([
+            'grouped' => $grouped,
+            'unread_count' => Auth::user()->unreadNotificationsCount,
+        ]);
+    }
+
+    /**
+     * Actualizar preferencias de notificación
+     */
+    public function updatePreferences(Request $request)
+    {
+        $request->validate([
+            'email_notifications' => 'boolean',
+            'push_notifications' => 'boolean',
+            'task_notifications' => 'boolean',
+            'project_notifications' => 'boolean',
+            'message_notifications' => 'boolean',
+        ]);
+        
+        $user = Auth::user();
+        
+        // Aquí actualizarías las preferencias en la base de datos
+        // Por ahora, simulamos la actualización
+        $preferences = $request->only([
+            'email_notifications',
+            'push_notifications',
+            'task_notifications',
+            'project_notifications',
+            'message_notifications',
+        ]);
+        
+        // $user->update($preferences); // Si tienes estos campos en la tabla users
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Preferencias actualizadas',
+            'preferences' => $preferences,
+        ]);
+    }
+
     public function test()
     {
         $user = Auth::user();
+
+        // Crear diferentes tipos de notificaciones de prueba
+        $notifications = [];
         
-        // Crear notificación de prueba
-        $notification = Notification::create([
+        // Notificación de tarea
+        $notifications[] = Notification::create([
             'user_id' => $user->id,
-            'type' => 'info',
-            'title' => 'Notificación de prueba',
-            'message' => 'Esta es una notificación de prueba creada en ' . now()->format('H:i:s'),
+            'type' => Notification::TYPE_TASK_ASSIGNED,
+            'title' => 'Notificación de prueba - Tarea',
+            'message' => 'Esta es una notificación de prueba para una tarea asignada',
             'data' => [
-                'test' => true,
-                'timestamp' => now()->toDateTimeString(),
+                'task_title' => 'Tarea de ejemplo',
+                'project_title' => 'Proyecto de prueba',
+            ],
+        ]);
+        
+        // Notificación de proyecto
+        $notifications[] = Notification::create([
+            'user_id' => $user->id,
+            'type' => Notification::TYPE_PROJECT_DEADLINE,
+            'title' => 'Notificación de prueba - Proyecto',
+            'message' => 'El proyecto vence en 3 días',
+            'data' => [
+                'project_title' => 'Proyecto de prueba',
+                'days' => 3,
+            ],
+        ]);
+        
+        // Notificación de mensaje
+        $notifications[] = Notification::create([
+            'user_id' => $user->id,
+            'type' => Notification::TYPE_MESSAGE_RECEIVED,
+            'title' => 'Notificación de prueba - Mensaje',
+            'message' => 'Has recibido un nuevo mensaje',
+            'data' => [
+                'sender_name' => 'Usuario de prueba',
+                'project_title' => 'Proyecto de prueba',
             ],
         ]);
         
         return response()->json([
             'success' => true,
-            'message' => 'Notificación de prueba creada',
-            'notification' => $notification,
+            'message' => 'Notificaciones de prueba creadas',
+            'notifications' => $notifications,
         ]);
+    }
+
+    /**
+     * Obtener estadísticas de notificaciones para el dashboard
+     */
+    public function stats()
+    {
+        $user = Auth::user();
+        
+        $stats = [
+            'total' => $user->notifications()->count(),
+            'unread' => $user->unreadNotificationsCount,
+            'today' => $user->notifications()->whereDate('created_at', today())->count(),
+            'this_week' => $user->notifications()->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+            'by_type' => $user->notifications()
+                ->selectRaw('type, COUNT(*) as count')
+                ->groupBy('type')
+                ->pluck('count', 'type'),
+        ];
+        
+        return response()->json($stats);
     }
 }
