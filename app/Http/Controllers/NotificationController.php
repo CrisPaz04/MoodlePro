@@ -65,6 +65,7 @@ class NotificationController extends Controller
     /**
      * Marcar una notificación como leída
      */
+
     public function markAsRead(Notification $notification)
     {
         // Verificar que la notificación pertenece al usuario
@@ -80,7 +81,7 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
+
      * Marcar múltiples notificaciones como leídas
      */
     public function markMultipleAsRead(Request $request)
@@ -131,7 +132,6 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
      * Eliminar múltiples notificaciones
      */
     public function destroyMultiple(Request $request)
@@ -255,13 +255,10 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
-     * Enviar notificación de prueba
-     */
     public function test()
     {
         $user = Auth::user();
-        
+
         // Crear diferentes tipos de notificaciones de prueba
         $notifications = [];
         

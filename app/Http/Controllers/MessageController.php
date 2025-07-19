@@ -9,90 +9,139 @@ use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
+    /**
+     * Constructor - Requiere autenticación
+     */
     public function __construct()
     {
         $this->middleware('auth');
     }
 
+    /**
+     * Mostrar chat del proyecto
+     */
     public function index(Project $project)
     {
+        // Verificar que el usuario tenga acceso al proyecto
+        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+            abort(403, 'No tienes acceso a este proyecto');
+        }
+
+        // Cargar mensajes con usuarios
         $messages = $project->messages()
-            ->with(['user', 'replies.user'])
-            ->main()
-            ->oldest()
+            ->with('user')
+            ->orderBy('created_at', 'asc')
             ->get();
-            
-        return view('messages.index', compact('project', 'messages'));
+
+        // Cargar información del proyecto con miembros
+        $project->load('members');
+
+        return view('projects.chat', compact('project', 'messages'));
     }
 
+    /**
+     * Guardar nuevo mensaje
+     */
     public function store(Request $request)
     {
         $request->validate([
             'project_id' => 'required|exists:projects,id',
-            'content' => 'required|string|max:1000',
-            'reply_to' => 'nullable|exists:messages,id'
+            'content' => 'required|string|max:500'
         ]);
 
+        // Verificar acceso al proyecto
+        $project = Project::findOrFail($request->project_id);
+        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+            abort(403, 'No tienes acceso a este proyecto');
+        }
+
+        // Crear mensaje
         $message = Message::create([
             'project_id' => $request->project_id,
             'user_id' => Auth::id(),
-            'content' => $request->content,
-            'reply_to' => $request->reply_to
+            'content' => $request->content
         ]);
 
+        // Cargar relación con usuario
+        $message->load('user');
+
+        // Notificar a los miembros del proyecto (excepto al emisor)
+        foreach ($project->members as $member) {
+            if ($member->id !== Auth::id()) {
+                // Aquí se crearía la notificación
+                \App\Models\Notification::messageReceived($member, $message);
+            }
+        }
+
+        // Si es petición AJAX
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => $message->load('user')
+                'message' => [
+                    'id' => $message->id,
+                    'content' => $message->content,
+                    'user' => [
+                        'id' => $message->user->id,
+                        'name' => $message->user->name
+                    ],
+                    'created_at' => $message->created_at->toISOString()
+                ]
             ]);
         }
 
-        return redirect()->back()->with('success', 'Mensaje enviado');
+        return redirect()->back();
     }
 
-    public function update(Request $request, Message $message)
-    {
-        if ($message->user_id !== Auth::id()) {
-            abort(403, 'No autorizado');
-        }
-
-        $request->validate([
-            'content' => 'required|string|max:1000'
-        ]);
-
-        $message->update([
-            'content' => $request->content,
-            'is_edited' => true,
-            'edited_at' => now()
-        ]);
-
-        return response()->json(['success' => true]);
-    }
-
-    public function destroy(Message $message)
-    {
-        if ($message->user_id !== Auth::id()) {
-            abort(403, 'No autorizado');
-        }
-
-        $message->delete();
-        return response()->json(['success' => true]);
-    }
-
-    // API endpoint para obtener mensajes nuevos (polling)
+    /**
+     * Obtener mensajes nuevos (para polling/real-time)
+     */
     public function getNewMessages(Project $project, Request $request)
     {
+        // Verificar acceso
+        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+            abort(403);
+        }
+
         $lastMessageId = $request->get('last_message_id', 0);
         
         $newMessages = $project->messages()
             ->with('user')
             ->where('id', '>', $lastMessageId)
-            ->oldest()
-            ->get();
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($message) {
+                return [
+                    'id' => $message->id,
+                    'content' => $message->content,
+                    'user' => [
+                        'id' => $message->user->id,
+                        'name' => $message->user->name
+                    ],
+                    'created_at' => $message->created_at->toISOString()
+                ];
+            });
 
         return response()->json([
             'messages' => $newMessages,
             'count' => $newMessages->count()
+        ]);
+    }
+
+    /**
+     * Eliminar mensaje (solo el autor)
+     */
+    public function destroy(Message $message)
+    {
+        // Solo el autor puede eliminar
+        if ($message->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para eliminar este mensaje');
+        }
+
+        $message->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mensaje eliminado'
         ]);
     }
 }

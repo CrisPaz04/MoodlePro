@@ -9,6 +9,12 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
 // ============================================
 // RUTAS PÚBLICAS
 // ============================================
@@ -29,13 +35,12 @@ Route::middleware(['auth'])->group(function () {
     
     // Dashboard principal
     Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
-    Route::get('/home', [HomeController::class, 'index'])->name('home'); // Alias
+    Route::get('/home', [HomeController::class, 'index'])->name('home'); // Alias para compatibilidad
     
-    // APIs para dashboard
-    Route::prefix('dashboard/api')->name('dashboard.api.')->group(function () {
-        Route::get('/stats', [HomeController::class, 'getStats'])->name('stats');
-        Route::get('/activity', [HomeController::class, 'getActivity'])->name('activity');
-        Route::get('/charts', [HomeController::class, 'getChartData'])->name('charts');
+    // APIs para dashboard (gráficos y actividad)
+    Route::prefix('api/dashboard')->name('api.dashboard.')->group(function () {
+        Route::get('/chart/{type}', [HomeController::class, 'getChartData'])->name('chart');
+        Route::get('/activity', [HomeController::class, 'getRecentActivity'])->name('activity');
     });
     
     // ============================================
@@ -47,8 +52,8 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('projects/{project}')->name('projects.')->group(function () {
         // Gestión de miembros
         Route::get('/members', [ProjectController::class, 'members'])->name('members');
-        Route::post('/members', [ProjectController::class, 'addMember'])->name('add-member');
-        Route::delete('/members/{user}', [ProjectController::class, 'removeMember'])->name('remove-member');
+        Route::post('/members', [ProjectController::class, 'addMember'])->name('addMember');
+        Route::delete('/members/{user}', [ProjectController::class, 'removeMember'])->name('removeMember');
         
         // Chat del proyecto
         Route::get('/chat', [MessageController::class, 'index'])->name('chat');
@@ -59,10 +64,10 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
     Route::resource('tasks', TaskController::class);
     
-    // API para Kanban (AJAX)
+    // API para actualizar tareas en Kanban
     Route::prefix('api/tasks')->name('api.tasks.')->group(function () {
-        Route::patch('/{task}/status', [TaskController::class, 'updateStatus'])->name('update-status');
-        Route::patch('/{task}/order', [TaskController::class, 'updateOrder'])->name('update-order');
+        Route::patch('/{task}/status', [TaskController::class, 'updateStatus'])->name('updateStatus');
+        Route::patch('/{task}/order', [TaskController::class, 'updateOrder'])->name('updateOrder');
     });
     
     // ============================================
@@ -70,11 +75,8 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
     Route::prefix('messages')->name('messages.')->group(function () {
         Route::post('/', [MessageController::class, 'store'])->name('store');
-        Route::patch('/{message}', [MessageController::class, 'update'])->name('update');
-        Route::delete('/{message}', [MessageController::class, 'destroy'])->name('destroy');
-        
-        // API para polling de mensajes nuevos
         Route::get('/project/{project}/new', [MessageController::class, 'getNewMessages'])->name('new');
+        Route::delete('/{message}', [MessageController::class, 'destroy'])->name('destroy');
     });
     
     // ============================================
@@ -86,64 +88,35 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('resources')->name('resources.')->group(function () {
         Route::get('/{resource}/download', [ResourceController::class, 'download'])->name('download');
         Route::post('/{resource}/rate', [ResourceController::class, 'rate'])->name('rate');
-        
-        // Filtros y búsqueda
-        Route::get('/category/{category}', [ResourceController::class, 'index'])->name('category');
-        Route::get('/search', [ResourceController::class, 'index'])->name('search');
+        Route::post('/{resource}/favorite', [ResourceController::class, 'favorite'])->name('favorite');
     });
     
     // ============================================
     // RUTAS DE NOTIFICACIONES
     // ============================================
     Route::prefix('notifications')->name('notifications.')->group(function () {
-        // Vista principal de notificaciones
         Route::get('/', [NotificationController::class, 'index'])->name('index');
-        
-        // Marcar como leída
-        Route::patch('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
-        Route::post('/mark-multiple-read', [NotificationController::class, 'markMultipleAsRead'])->name('mark-multiple-read');
-        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
-        
-        // Eliminar notificaciones
+        Route::post('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
+        Route::post('/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('unread');
         Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
-        Route::post('/destroy-multiple', [NotificationController::class, 'destroyMultiple'])->name('destroy-multiple');
-        Route::post('/clear-read', [NotificationController::class, 'clearRead'])->name('clear-read');
-        
-        // APIs para AJAX
-        Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
-        Route::get('/recent', [NotificationController::class, 'recent'])->name('recent');
-        Route::get('/grouped', [NotificationController::class, 'grouped'])->name('grouped');
-        Route::get('/stats', [NotificationController::class, 'stats'])->name('stats');
-        
-        // Preferencias
-        Route::patch('/preferences', [NotificationController::class, 'updatePreferences'])->name('update-preferences');
-        
-        // Notificación de prueba (solo desarrollo)
-        if (app()->environment('local')) {
-            Route::post('/test', [NotificationController::class, 'test'])->name('test');
-        }
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('readAll');
+        Route::delete('/clear-all', [NotificationController::class, 'clearAll'])->name('clearAll');
     });
     
     // ============================================
-    // RUTAS DE PERFIL Y CONFIGURACIÓN
+    // RUTAS DE PERFIL
     // ============================================
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'show'])->name('show');
         Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
         Route::put('/update', [ProfileController::class, 'update'])->name('update');
-        Route::delete('/delete', [ProfileController::class, 'destroy'])->name('delete');
-        
-        // Rutas adicionales para el perfil
-        Route::post('/upload-document', [ProfileController::class, 'uploadDocument'])->name('upload-document');
-        Route::delete('/document/{document}', [ProfileController::class, 'deleteDocument'])->name('delete-document');
-        Route::patch('/preferences', [ProfileController::class, 'updatePreferences'])->name('update-preferences');
+        Route::post('/upload-document', [ProfileController::class, 'uploadDocument'])->name('uploadDocument');
+        Route::delete('/document/{document}', [ProfileController::class, 'deleteDocument'])->name('deleteDocument');
     });
     
     // ============================================
-    // RUTAS ADICIONALES/UTILIDADES
+    // BÚSQUEDA GLOBAL
     // ============================================
-    
-    // Búsqueda global
     Route::get('/search', function (Illuminate\Http\Request $request) {
         $query = $request->get('q');
         
@@ -161,8 +134,7 @@ Route::middleware(['auth'])->group(function () {
             ->orWhere('description', 'like', "%{$query}%")
             ->get();
             
-        $resources = App\Models\Resource::public()
-            ->where('title', 'like', "%{$query}%")
+        $resources = App\Models\Resource::where('title', 'like', "%{$query}%")
             ->orWhere('description', 'like', "%{$query}%")
             ->get();
         
@@ -171,26 +143,11 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ============================================
-// RUTAS DE FALLBACK Y MANTENIMIENTO
-// ============================================
-
-// Ruta para páginas no encontradas personalizadas
-Route::fallback(function () {
-    return view('errors.404');
-});
-
-// Ruta de mantenimiento (cuando sea necesario)
-Route::get('/maintenance', function () {
-    return view('maintenance');
-})->name('maintenance');
-
-// ============================================
 // RUTAS DE DESARROLLO (SOLO EN LOCAL)
 // ============================================
 
 if (app()->environment('local')) {
-    // Rutas para testing y desarrollo
-    Route::prefix('dev')->name('dev.')->group(function () {
+    Route::prefix('dev')->group(function () {
         Route::get('/test-models', function () {
             return [
                 'projects' => App\Models\Project::count(),
