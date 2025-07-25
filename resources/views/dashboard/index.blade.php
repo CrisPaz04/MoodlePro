@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Cargar gráfico principal
 function loadMainChart(type) {
-    fetch(`{{ route('dashboard.api.charts') }}?type=${type}`)
+    fetch(`/api/dashboard/chart/${type}`)
         .then(response => response.json())
         .then(data => {
             const ctx = document.getElementById('mainChart').getContext('2d');
@@ -583,7 +583,7 @@ function updateChart(type) {
 
 // Cargar actividad reciente
 function loadRecentActivity() {
-    fetch('{{ route('dashboard.api.activity') }}?limit=10')
+    fetch('/api/dashboard/activity?limit=10')
         .then(response => response.json())
         .then(activities => {
             const feedContainer = document.getElementById('activityFeed');
@@ -656,9 +656,11 @@ function formatTimeAgo(date) {
     return 'hace un momento';
 }
 
-// Auto-actualizar estadísticas cada minuto
+// Comentado: Auto-actualizar estadísticas cada minuto
+// Si necesitas esta funcionalidad, agrega la ruta en routes/web.php
+/*
 setInterval(() => {
-    fetch('{{ route('dashboard.api.stats') }}')
+    fetch('/api/dashboard/stats')
         .then(response => response.json())
         .then(stats => {
             // Actualizar números en las tarjetas
@@ -671,5 +673,6 @@ setInterval(() => {
         })
         .catch(error => console.error('Error updating stats:', error));
 }, 60000);
+*/
 </script>
 @endpush
