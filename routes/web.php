@@ -40,7 +40,8 @@ Route::middleware(['auth'])->group(function () {
     // APIs para dashboard (gráficos y actividad)
     Route::prefix('api/dashboard')->name('api.dashboard.')->group(function () {
         Route::get('/chart/{type}', [HomeController::class, 'getChartData'])->name('chart');
-        Route::get('/activity', [HomeController::class, 'getActivity'])->name('activity'); // CAMBIADO: getRecentActivity -> getActivity
+        Route::get('/activity', [HomeController::class, 'getRecentActivity'])->name('activity');
+        Route::get('/stats', [HomeController::class, 'getStats'])->name('stats');
     });
     
     // ============================================

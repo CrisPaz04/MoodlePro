@@ -129,10 +129,9 @@ class HomeController extends Controller
     /**
      * API: Obtener datos para gráficos
      */
-    public function getChartData(Request $request)
+    public function getChartData($type)
     {
         $user = Auth::user();
-        $type = $request->get('type', 'task_progress');
         
         switch ($type) {
             case 'task_progress':
@@ -172,7 +171,7 @@ class HomeController extends Controller
                     'title' => "Nueva tarea: {$task->title}",
                     'description' => "En proyecto: {$task->project->title}",
                     'date' => $task->created_at,
-                    'icon' => 'fa-tasks',
+                    'icon' => 'tasks',
                     'color' => 'primary'
                 ];
             });
@@ -191,7 +190,7 @@ class HomeController extends Controller
                     'title' => "Mensaje en: {$message->project->title}",
                     'description' => substr($message->content, 0, 50) . '...',
                     'date' => $message->created_at,
-                    'icon' => 'fa-comment',
+                    'icon' => 'comment',
                     'color' => 'info'
                 ];
             });
@@ -209,7 +208,7 @@ class HomeController extends Controller
                     'title' => "Recurso subido: {$resource->title}",
                     'description' => "Categoría: {$resource->category}",
                     'date' => $resource->created_at,
-                    'icon' => 'fa-file-upload',
+                    'icon' => 'file-upload',
                     'color' => 'success'
                 ];
             });
@@ -348,7 +347,7 @@ class HomeController extends Controller
             $dateStr = $date->format('Y-m-d');
             
             $workloadByDay[$date->format('M d')] = $tasks->filter(function ($task) use ($dateStr) {
-                return $task->due_date->format('Y-m-d') == $dateStr;
+                return $task->due_date->format('Y-m-d') === $dateStr;
             })->count();
         }
         
@@ -359,7 +358,8 @@ class HomeController extends Controller
                     'label' => 'Tareas por vencer',
                     'data' => array_values($workloadByDay),
                     'backgroundColor' => '#e74a3b',
-                    'borderColor' => '#e74a3b'
+                    'borderColor' => '#e74a3b',
+                    'borderWidth' => 2
                 ]
             ]
         ]);
@@ -370,51 +370,47 @@ class HomeController extends Controller
      */
     private function calculateProductivityScore($user)
     {
-        $totalTasks = $user->assignedTasks()->count();
-        $completedTasks = $user->assignedTasks()->where('status', 'done')->count();
-        $overdueTasks = $user->assignedTasks()
-            ->where('due_date', '<', now())
-            ->where('status', '!=', 'done')
+        $lastWeek = now()->subWeek();
+        
+        $tasksCompleted = $user->assignedTasks()
+            ->where('status', 'done')
+            ->where('updated_at', '>=', $lastWeek)
             ->count();
             
-        if ($totalTasks == 0) return 0;
+        $tasksOnTime = $user->assignedTasks()
+            ->where('status', 'done')
+            ->where('updated_at', '>=', $lastWeek)
+            ->whereColumn('updated_at', '<=', 'due_date')
+            ->count();
+            
+        $score = 0;
+        if ($tasksCompleted > 0) {
+            $score = round(($tasksOnTime / $tasksCompleted) * 100);
+        }
         
-        $completionRate = ($completedTasks / $totalTasks) * 100;
-        $overdueRate = ($overdueTasks / $totalTasks) * 100;
-        
-        // Fórmula simple: tasa de completitud menos penalización por tareas vencidas
-        $score = max(0, $completionRate - ($overdueRate * 0.5));
-        
-        return round($score);
+        return $score;
     }
 
     /**
-     * Calcular racha de días activos
+     * Calcular días de racha
      */
     private function calculateStreak($user)
     {
-        $dates = Task::where('assigned_to', $user->id)
-            ->where('status', 'done')
-            ->orderBy('updated_at', 'desc')
-            ->pluck('updated_at')
-            ->map(function ($date) {
-                return $date->format('Y-m-d');
-            })
-            ->unique()
-            ->values();
-            
-        if ($dates->isEmpty()) return 0;
-        
         $streak = 0;
-        $currentDate = now();
+        $date = now()->startOfDay();
         
-        foreach ($dates as $date) {
-            if ($currentDate->format('Y-m-d') == $date) {
-                $streak++;
-                $currentDate->subDay();
-            } else {
+        while (true) {
+            $hasActivity = Task::where('assigned_to', $user->id)
+                ->where('status', 'done')
+                ->whereDate('updated_at', $date)
+                ->exists();
+                
+            if (!$hasActivity) {
                 break;
             }
+            
+            $streak++;
+            $date->subDay();
         }
         
         return $streak;

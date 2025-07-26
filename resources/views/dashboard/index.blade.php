@@ -583,7 +583,7 @@ function updateChart(type) {
 
 // Cargar actividad reciente
 function loadRecentActivity() {
-    fetch('/api/dashboard/activity?limit=10')
+    fetch('{{ route('api.dashboard.activity') }}?limit=10')
         .then(response => response.json())
         .then(activities => {
             const feedContainer = document.getElementById('activityFeed');
@@ -660,7 +660,7 @@ function formatTimeAgo(date) {
 // Si necesitas esta funcionalidad, agrega la ruta en routes/web.php
 /*
 setInterval(() => {
-    fetch('/api/dashboard/stats')
+    fetch('{{ route('api.dashboard.chart', 'stats') }}')
         .then(response => response.json())
         .then(stats => {
             // Actualizar números en las tarjetas
