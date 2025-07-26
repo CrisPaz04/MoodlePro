@@ -347,10 +347,6 @@
                 <i class="fas fa-shield-alt"></i>
                 Privacidad
             </a>
-            <button class="btn-profile btn-upgrade">
-                <i class="fas fa-crown"></i>
-                Necesitas más espacio?
-            </button>
         </div>
     </div>
 

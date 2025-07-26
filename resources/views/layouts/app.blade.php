@@ -433,18 +433,6 @@
                     <span>Mi Perfil</span>
                 </a>
             </nav>
-
-            <!-- Sidebar Footer -->
-            <div class="sidebar-footer">
-                <div class="sidebar-footer-content">
-                    <div class="storage-info">
-                        <div class="storage-progress">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: 60%"></div>
-                        </div>
-                        <small class="storage-text">60% de almacenamiento usado</small>
-                    </div>
-                </div>
-            </div>
         </aside>
 
         <!-- Main Content -->
@@ -455,12 +443,7 @@
                     <button class="sidebar-toggle" id="sidebarToggle">
                         <i class="fas fa-bars"></i>
                     </button>
-                    
-                    <div class="search-bar">
-                        <i class="fas fa-search"></i>
-                        <input type="search" class="form-control" placeholder="Buscar proyectos, tareas...">
                     </div>
-                </div>
 
                 <div class="topbar-right">
                     <!-- Notifications -->
