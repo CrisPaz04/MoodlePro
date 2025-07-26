@@ -41,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('api/dashboard')->name('api.dashboard.')->group(function () {
         Route::get('/chart/{type}', [HomeController::class, 'getChartData'])->name('chart');
         Route::get('/activity', [HomeController::class, 'getRecentActivity'])->name('activity');
+        Route::get('/stats', [HomeController::class, 'getStats'])->name('stats');
     });
     
     // ============================================

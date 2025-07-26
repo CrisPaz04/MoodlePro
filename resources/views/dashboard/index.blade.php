@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Cargar gráfico principal
 function loadMainChart(type) {
-    fetch(`{{ route('dashboard.api.charts') }}?type=${type}`)
+    fetch(`/api/dashboard/chart/${type}`)
         .then(response => response.json())
         .then(data => {
             const ctx = document.getElementById('mainChart').getContext('2d');
@@ -583,7 +583,7 @@ function updateChart(type) {
 
 // Cargar actividad reciente
 function loadRecentActivity() {
-    fetch('{{ route('dashboard.api.activity') }}?limit=10')
+    fetch('{{ route('api.dashboard.activity') }}?limit=10')
         .then(response => response.json())
         .then(activities => {
             const feedContainer = document.getElementById('activityFeed');
@@ -658,7 +658,7 @@ function formatTimeAgo(date) {
 
 // Auto-actualizar estadísticas cada minuto
 setInterval(() => {
-    fetch('{{ route('dashboard.api.stats') }}')
+    fetch('{{ route('api.dashboard.chart', 'stats') }}')
         .then(response => response.json())
         .then(stats => {
             // Actualizar números en las tarjetas
