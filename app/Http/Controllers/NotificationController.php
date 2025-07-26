@@ -82,7 +82,7 @@ class NotificationController extends Controller
     }
 
 
-     * Marcar múltiples notificaciones como leídas
+     /** Marcar múltiples notificaciones como leídas
      */
     public function markMultipleAsRead(Request $request)
     {
@@ -132,7 +132,7 @@ class NotificationController extends Controller
         ]);
     }
 
-     * Eliminar múltiples notificaciones
+     /** Eliminar múltiples notificaciones
      */
     public function destroyMultiple(Request $request)
     {
