@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Notification;
 use App\Models\User;
@@ -13,36 +12,41 @@ use Carbon\Carbon;
 
 class NotificationSeeder extends Seeder
 {
-    /**
-     * Run the database seeder.
-     */
     public function run(): void
     {
         $users = User::all();
         $projects = Project::all();
         $tasks = Task::all();
         $resources = Resource::all();
-        
-        if ($users->count() == 0) {
-            $this->command->error('❌ Se necesitan usuarios. Ejecuta UserSeeder primero.');
+
+        if ($users->isEmpty()) {
+            $this->command->error('❌ No hay usuarios. Ejecuta UserSeeder primero.');
             return;
         }
 
-        // Crear notificaciones para cada usuario
-        foreach ($users->take(10) as $user) { // Solo primeros 10 usuarios
+        if ($projects->isEmpty()) {
+            $this->command->warn('⚠️ No hay proyectos. Algunas notificaciones no se generarán.');
+        }
+
+        if ($tasks->isEmpty()) {
+            $this->command->warn('⚠️ No hay tareas. Algunas notificaciones no se generarán.');
+        }
+
+        if ($resources->isEmpty()) {
+            $this->command->warn('⚠️ No hay recursos. Algunas notificaciones no se generarán.');
+        }
+
+        foreach ($users->take(10) as $user) {
             $this->createNotificationsForUser($user, $projects, $tasks, $resources);
         }
 
         $this->command->info('✅ Notificaciones creadas exitosamente');
     }
 
-    /**
-     * Crear notificaciones para un usuario específico
-     */
     private function createNotificationsForUser(User $user, $projects, $tasks, $resources)
     {
         $notificationCount = rand(8, 15);
-        
+
         for ($i = 0; $i < $notificationCount; $i++) {
             $this->createRandomNotification($user, $projects, $tasks, $resources);
         }
@@ -50,14 +54,11 @@ class NotificationSeeder extends Seeder
         $this->command->info("✅ Notificaciones creadas para: {$user->name}");
     }
 
-    /**
-     * Crear una notificación aleatoria
-     */
     private function createRandomNotification(User $user, $projects, $tasks, $resources)
     {
         $types = [
             'task_assigned',
-            'task_completed', 
+            'task_completed',
             'task_overdue',
             'project_invitation',
             'project_deadline',
@@ -67,7 +68,7 @@ class NotificationSeeder extends Seeder
         ];
 
         $type = $types[array_rand($types)];
-        
+
         switch ($type) {
             case 'task_assigned':
                 $this->createTaskAssignedNotification($user, $tasks);
@@ -96,13 +97,12 @@ class NotificationSeeder extends Seeder
         }
     }
 
-    /**
-     * Notificación de tarea asignada
-     */
     private function createTaskAssignedNotification(User $user, $tasks)
     {
+        if ($tasks->isEmpty()) return;
+
         $task = $tasks->random();
-        
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -119,18 +119,18 @@ class NotificationSeeder extends Seeder
             'related_type' => Task::class,
             'related_id' => $task->id,
             'action_url' => "/projects/{$task->project_id}",
-            'read_at' => rand(0, 3) == 0 ? null : Carbon::now()->subDays(rand(0, 5)), // 25% sin leer
+            'read_at' => rand(0, 3) == 0 ? null : Carbon::now()->subDays(rand(0, 5)),
             'created_at' => Carbon::now()->subDays(rand(0, 10))
         ]);
     }
 
-    /**
-     * Notificación de tarea completada
-     */
     private function createTaskCompletedNotification(User $user, $tasks)
     {
-        $task = $tasks->where('status', 'done')->random();
-        
+        $completedTasks = $tasks->where('status', 'done');
+        if ($completedTasks->isEmpty()) return;
+
+        $task = $completedTasks->random();
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -152,13 +152,12 @@ class NotificationSeeder extends Seeder
         ]);
     }
 
-    /**
-     * Notificación de tarea vencida
-     */
     private function createTaskOverdueNotification(User $user, $tasks)
     {
+        if ($tasks->isEmpty()) return;
+
         $task = $tasks->random();
-        
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -176,19 +175,19 @@ class NotificationSeeder extends Seeder
             'related_type' => Task::class,
             'related_id' => $task->id,
             'action_url' => "/projects/{$task->project_id}",
-            'read_at' => rand(0, 2) == 0 ? null : Carbon::now()->subDays(rand(0, 2)), // 33% sin leer
+            'read_at' => rand(0, 2) == 0 ? null : Carbon::now()->subDays(rand(0, 2)),
             'created_at' => Carbon::now()->subDays(rand(0, 5))
         ]);
     }
 
-    /**
-     * Notificación de invitación a proyecto
-     */
     private function createProjectInvitationNotification(User $user, $projects)
     {
+        if ($projects->isEmpty()) return;
+
         $project = $projects->random();
         $inviter = User::where('id', '!=', $user->id)->inRandomOrder()->first();
-        
+        if (!$inviter) return;
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -210,14 +209,13 @@ class NotificationSeeder extends Seeder
         ]);
     }
 
-    /**
-     * Notificación de deadline próximo
-     */
     private function createProjectDeadlineNotification(User $user, $projects)
     {
+        if ($projects->isEmpty()) return;
+
         $project = $projects->random();
         $daysRemaining = rand(1, 7);
-        
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -229,24 +227,24 @@ class NotificationSeeder extends Seeder
                 'project_id' => $project->id,
                 'project_title' => $project->title,
                 'days_remaining' => $daysRemaining,
-                'deadline' => $project->deadline->format('d/m/Y'),
+                'deadline' => $project->deadline?->format('d/m/Y'),
             ],
             'related_type' => Project::class,
             'related_id' => $project->id,
             'action_url' => "/projects/{$project->id}",
-            'read_at' => rand(0, 2) == 0 ? null : Carbon::now()->subDays(rand(0, 1)), // 33% sin leer
+            'read_at' => rand(0, 2) == 0 ? null : Carbon::now()->subDays(rand(0, 1)),
             'created_at' => Carbon::now()->subDays(rand(0, 3))
         ]);
     }
 
-    /**
-     * Notificación de nuevo miembro
-     */
     private function createMemberAddedNotification(User $user, $projects)
     {
+        if ($projects->isEmpty()) return;
+
         $project = $projects->random();
         $newMember = User::where('id', '!=', $user->id)->inRandomOrder()->first();
-        
+        if (!$newMember) return;
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -268,14 +266,14 @@ class NotificationSeeder extends Seeder
         ]);
     }
 
-    /**
-     * Notificación de mensaje recibido
-     */
     private function createMessageNotification(User $user, $projects)
     {
+        if ($projects->isEmpty()) return;
+
         $project = $projects->random();
         $sender = User::where('id', '!=', $user->id)->inRandomOrder()->first();
-        
+        if (!$sender) return;
+
         $messages = [
             'Hola equipo, ¿cómo va el avance?',
             'Necesito ayuda con esta funcionalidad',
@@ -285,7 +283,7 @@ class NotificationSeeder extends Seeder
             'El testing está casi listo',
             'Excelente trabajo en el diseño'
         ];
-        
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
@@ -308,16 +306,14 @@ class NotificationSeeder extends Seeder
         ]);
     }
 
-    /**
-     * Notificación de recurso compartido
-     */
     private function createResourceNotification(User $user, $resources)
     {
-        if ($resources->count() == 0) return;
-        
+        if ($resources->isEmpty()) return;
+
         $resource = $resources->random();
         $uploader = User::where('id', '!=', $user->id)->inRandomOrder()->first();
-        
+        if (!$uploader) return;
+
         Notification::create([
             'notifiable_type' => User::class,
             'notifiable_id' => $user->id,
