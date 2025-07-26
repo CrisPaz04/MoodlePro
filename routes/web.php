@@ -168,36 +168,50 @@ if (app()->environment('local')) {
                 return redirect()->route('login')->with('error', 'Debes iniciar sesión primero');
             }
             
+            // Crear proyecto de prueba
             $project = App\Models\Project::create([
-                'title' => 'Proyecto de Prueba',
-                'description' => 'Este es un proyecto de prueba para MoodlePro',
+                'title' => 'Proyecto de Prueba ' . now()->format('Y-m-d H:i'),
+                'description' => 'Este es un proyecto de prueba creado automáticamente',
                 'start_date' => now(),
-                'deadline' => now()->addDays(30),
-                'creator_id' => $user->id,
-                'status' => 'active'
-            ]);
-            
-            $project->members()->attach($user->id, [
-                'role' => 'coordinator',
-                'joined_at' => now()
-            ]);
-            
-            $task = App\Models\Task::create([
-                'project_id' => $project->id,
-                'title' => 'Tarea de ejemplo',
-                'description' => 'Esta es una tarea de prueba',
-                'status' => 'todo',
-                'priority' => 'medium',
+                'deadline' => now()->addMonths(2),
+                'status' => 'active',
                 'created_by' => $user->id,
-                'assigned_to' => $user->id,
-                'due_date' => now()->addDays(7)
             ]);
             
-            // Crear notificación de prueba
-            $user->notifyTaskAssigned($task);
+            // Agregar al usuario como miembro
+            $project->members()->attach($user->id, ['role' => 'leader']);
             
-            return redirect()->route('projects.show', $project)
-                ->with('success', 'Datos de prueba creados con notificación');
+            // Crear algunas tareas
+            for ($i = 1; $i <= 5; $i++) {
+                App\Models\Task::create([
+                    'project_id' => $project->id,
+                    'title' => "Tarea de prueba {$i}",
+                    'description' => "Descripción de la tarea {$i}",
+                    'status' => ['todo', 'in_progress', 'done'][rand(0, 2)],
+                    'priority' => ['low', 'medium', 'high'][rand(0, 2)],
+                    'due_date' => now()->addDays(rand(1, 30)),
+                    'assigned_to' => $user->id,
+                    'created_by' => $user->id,
+                ]);
+            }
+            
+            return redirect()->route('dashboard')->with('success', 'Datos de prueba creados exitosamente');
+        });
+        
+        Route::get('/clear-data', function () {
+            if (!auth()->check()) {
+                return redirect()->route('login');
+            }
+            
+            // Limpiar datos de prueba
+            App\Models\Task::truncate();
+            App\Models\Message::truncate();
+            App\Models\Resource::truncate();
+            App\Models\Notification::truncate();
+            DB::table('project_members')->truncate();
+            App\Models\Project::truncate();
+            
+            return redirect()->route('dashboard')->with('success', 'Datos limpiados exitosamente');
         });
     });
 }

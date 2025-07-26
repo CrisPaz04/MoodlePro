@@ -656,7 +656,9 @@ function formatTimeAgo(date) {
     return 'hace un momento';
 }
 
-// Auto-actualizar estadísticas cada minuto
+// Comentado: Auto-actualizar estadísticas cada minuto
+// Si necesitas esta funcionalidad, agrega la ruta en routes/web.php
+/*
 setInterval(() => {
     fetch('{{ route('api.dashboard.chart', 'stats') }}')
         .then(response => response.json())
@@ -671,5 +673,6 @@ setInterval(() => {
         })
         .catch(error => console.error('Error updating stats:', error));
 }, 60000);
+*/
 </script>
 @endpush
