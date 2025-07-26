@@ -627,7 +627,7 @@ function loadRecentActivity() {
             console.error('Error loading activity:', error);
             document.getElementById('activityFeed').innerHTML = `
                 <div class="alert alert-danger m-3">
-                    Error al cargar la actividad
+                    No tienes actividad reciente.
                 </div>
             `;
         });
