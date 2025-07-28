@@ -402,11 +402,6 @@
                     <i class="fas fa-file-alt"></i>
                     <span>Biblioteca</span>
                 </a>
-                
-                <a href="{{ route('resources.create') }}" class="nav-link">
-                    <i class="fas fa-upload"></i>
-                    <span>Subir Recurso</span>
-                </a>
 
                 <!-- Communication Section -->
                 <div class="nav-section-title">

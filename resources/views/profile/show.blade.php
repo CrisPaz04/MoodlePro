@@ -410,44 +410,6 @@
             </div>
         </div>
 
-        <!-- Academic Documents -->
-        <div class="content-section">
-            <div class="section-header">
-                <h3 class="section-title">Documentos Académicos</h3>
-                <button class="btn-edit" onclick="document.getElementById('fileInput').click()">
-                    <i class="fas fa-upload me-1"></i>
-                    Subir
-                </button>
-            </div>
-
-            <div class="documents-grid">
-                @forelse($documents ?? [] as $document)
-                    <div class="document-card" onclick="viewDocument('{{ $document->id }}')">
-                        <div class="document-icon">
-                            <i class="fas fa-file-pdf"></i>
-                        </div>
-                        <div class="document-info">
-                            <div class="document-name">{{ $document->name }}</div>
-                            <div class="document-meta">{{ $document->size }} • {{ $document->uploaded_at }}</div>
-                        </div>
-                        <div class="document-action">
-                            <i class="fas fa-eye"></i>
-                        </div>
-                    </div>
-                @empty
-                    <div class="col-12">
-                        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                            <p class="upload-text">Arrastra y suelta archivos aquí o haz clic para seleccionar</p>
-                            <button class="btn-upload">Seleccionar Archivos</button>
-                        </div>
-                    </div>
-                @endforelse
-            </div>
-
-            <input type="file" id="fileInput" style="display: none;" multiple accept=".pdf,.doc,.docx">
-        </div>
-
         <!-- Settings & Preferences -->
         <div class="content-section">
             <div class="section-header">
