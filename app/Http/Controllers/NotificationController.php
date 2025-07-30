@@ -27,8 +27,8 @@ class NotificationController extends Controller
         $filter = $request->get('filter', 'all'); // all, unread, read
         $type = $request->get('type'); // tipo específico de notificación
         
-        // Construir query
-        $query = $user->notifications();
+        // Construir query usando tu modelo personalizado
+        $query = Notification::where('user_id', $user->id);
         
         // Aplicar filtros
         if ($filter === 'unread') {
@@ -41,14 +41,16 @@ class NotificationController extends Controller
             $query->ofType($type);
         }
         
-        // Obtener notificaciones paginadas
-        $notifications = $query->with('related')->paginate(20);
+        // Obtener notificaciones paginadas ordenadas por fecha
+        $notifications = $query->with('related')
+                               ->orderBy('created_at', 'desc')
+                               ->paginate(20);
         
         // Estadísticas
         $stats = [
-            'total' => $user->notifications()->count(),
-            'unread' => $user->unreadNotifications()->count(),
-            'today' => $user->notifications()->whereDate('created_at', today())->count(),
+            'total' => Notification::where('user_id', $user->id)->count(),
+            'unread' => Notification::where('user_id', $user->id)->unread()->count(),
+            'today' => Notification::where('user_id', $user->id)->whereDate('created_at', today())->count(),
         ];
         
         // Si es petición AJAX, devolver JSON
@@ -65,7 +67,6 @@ class NotificationController extends Controller
     /**
      * Marcar una notificación como leída
      */
-
     public function markAsRead(Notification $notification)
     {
         // Verificar que la notificación pertenece al usuario
@@ -81,8 +82,26 @@ class NotificationController extends Controller
         ]);
     }
 
+    /**
+     * Marcar una notificación como no leída
+     */
+    public function markAsUnread(Notification $notification)
+    {
+        // Verificar que la notificación pertenece al usuario
+        if ($notification->user_id !== Auth::id()) {
+            abort(403, 'No autorizado');
+        }
+        
+        $notification->markAsUnread();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Notificación marcada como no leída',
+        ]);
+    }
 
-     /** Marcar múltiples notificaciones como leídas
+    /**
+     * Marcar múltiples notificaciones como leídas
      */
     public function markMultipleAsRead(Request $request)
     {
@@ -91,7 +110,10 @@ class NotificationController extends Controller
             'notification_ids.*' => 'exists:notifications,id',
         ]);
         
-        $count = Auth::user()->markNotificationsAsRead($request->notification_ids);
+        $count = Notification::where('user_id', Auth::id())
+                           ->whereIn('id', $request->notification_ids)
+                           ->whereNull('read_at')
+                           ->update(['read_at' => now()]);
         
         return response()->json([
             'success' => true,
@@ -105,7 +127,9 @@ class NotificationController extends Controller
      */
     public function markAllAsRead()
     {
-        $count = Auth::user()->markAllNotificationsAsRead();
+        $count = Notification::where('user_id', Auth::id())
+                           ->whereNull('read_at')
+                           ->update(['read_at' => now()]);
         
         return response()->json([
             'success' => true,
@@ -132,7 +156,8 @@ class NotificationController extends Controller
         ]);
     }
 
-     /** Eliminar múltiples notificaciones
+    /**
+     * Eliminar múltiples notificaciones
      */
     public function destroyMultiple(Request $request)
     {
@@ -141,9 +166,9 @@ class NotificationController extends Controller
             'notification_ids.*' => 'exists:notifications,id',
         ]);
         
-        $count = Auth::user()->notifications()
-            ->whereIn('id', $request->notification_ids)
-            ->delete();
+        $count = Notification::where('user_id', Auth::id())
+                           ->whereIn('id', $request->notification_ids)
+                           ->delete();
         
         return response()->json([
             'success' => true,
@@ -153,11 +178,27 @@ class NotificationController extends Controller
     }
 
     /**
+     * Eliminar todas las notificaciones
+     */
+    public function clearAll()
+    {
+        $count = Notification::where('user_id', Auth::id())->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Todas las notificaciones eliminadas',
+            'count' => $count,
+        ]);
+    }
+
+    /**
      * Eliminar todas las notificaciones leídas
      */
     public function clearRead()
     {
-        $count = Auth::user()->deleteReadNotifications();
+        $count = Notification::where('user_id', Auth::id())
+                           ->whereNotNull('read_at')
+                           ->delete();
         
         return response()->json([
             'success' => true,
@@ -171,7 +212,7 @@ class NotificationController extends Controller
      */
     public function unreadCount()
     {
-        $count = Auth::user()->unreadNotificationsCount;
+        $count = Notification::where('user_id', Auth::id())->unread()->count();
         
         return response()->json([
             'count' => $count,
@@ -184,8 +225,9 @@ class NotificationController extends Controller
      */
     public function recent()
     {
-        $notifications = Auth::user()->notifications()
+        $notifications = Notification::where('user_id', Auth::id())
             ->with('related')
+            ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get()
             ->map(function ($notification) {
@@ -204,7 +246,7 @@ class NotificationController extends Controller
         
         return response()->json([
             'notifications' => $notifications,
-            'unread_count' => Auth::user()->unreadNotificationsCount,
+            'unread_count' => Notification::where('user_id', Auth::id())->unread()->count(),
         ]);
     }
 
@@ -213,48 +255,45 @@ class NotificationController extends Controller
      */
     public function grouped()
     {
-        $grouped = Auth::user()->getNotificationsGroupedByDate();
+        $notifications = Notification::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(function ($notification) {
+                return $notification->created_at->format('Y-m-d');
+            });
         
         return response()->json([
-            'grouped' => $grouped,
-            'unread_count' => Auth::user()->unreadNotificationsCount,
+            'grouped' => $notifications,
+            'unread_count' => Notification::where('user_id', Auth::id())->unread()->count(),
         ]);
     }
 
     /**
-     * Actualizar preferencias de notificación
+     * Obtener estadísticas de notificaciones para el dashboard
      */
-    public function updatePreferences(Request $request)
+    public function stats()
     {
-        $request->validate([
-            'email_notifications' => 'boolean',
-            'push_notifications' => 'boolean',
-            'task_notifications' => 'boolean',
-            'project_notifications' => 'boolean',
-            'message_notifications' => 'boolean',
-        ]);
-        
         $user = Auth::user();
         
-        // Aquí actualizarías las preferencias en la base de datos
-        // Por ahora, simulamos la actualización
-        $preferences = $request->only([
-            'email_notifications',
-            'push_notifications',
-            'task_notifications',
-            'project_notifications',
-            'message_notifications',
-        ]);
+        $stats = [
+            'total' => Notification::where('user_id', $user->id)->count(),
+            'unread' => Notification::where('user_id', $user->id)->unread()->count(),
+            'today' => Notification::where('user_id', $user->id)->whereDate('created_at', today())->count(),
+            'this_week' => Notification::where('user_id', $user->id)
+                         ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+                         ->count(),
+            'by_type' => Notification::where('user_id', $user->id)
+                       ->selectRaw('type, COUNT(*) as count')
+                       ->groupBy('type')
+                       ->pluck('count', 'type'),
+        ];
         
-        // $user->update($preferences); // Si tienes estos campos en la tabla users
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Preferencias actualizadas',
-            'preferences' => $preferences,
-        ]);
+        return response()->json($stats);
     }
 
+    /**
+     * Crear notificaciones de prueba
+     */
     public function test()
     {
         $user = Auth::user();
@@ -306,23 +345,36 @@ class NotificationController extends Controller
     }
 
     /**
-     * Obtener estadísticas de notificaciones para el dashboard
+     * Actualizar preferencias de notificación
      */
-    public function stats()
+    public function updatePreferences(Request $request)
     {
+        $request->validate([
+            'email_notifications' => 'boolean',
+            'push_notifications' => 'boolean',
+            'task_notifications' => 'boolean',
+            'project_notifications' => 'boolean',
+            'message_notifications' => 'boolean',
+        ]);
+        
         $user = Auth::user();
         
-        $stats = [
-            'total' => $user->notifications()->count(),
-            'unread' => $user->unreadNotificationsCount,
-            'today' => $user->notifications()->whereDate('created_at', today())->count(),
-            'this_week' => $user->notifications()->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-            'by_type' => $user->notifications()
-                ->selectRaw('type, COUNT(*) as count')
-                ->groupBy('type')
-                ->pluck('count', 'type'),
-        ];
+        // Aquí actualizarías las preferencias en la base de datos
+        // Por ahora, simulamos la actualización
+        $preferences = $request->only([
+            'email_notifications',
+            'push_notifications',
+            'task_notifications',
+            'project_notifications',
+            'message_notifications',
+        ]);
         
-        return response()->json($stats);
+        // $user->update($preferences); // Si tienes estos campos en la tabla users
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Preferencias actualizadas',
+            'preferences' => $preferences,
+        ]);
     }
 }
