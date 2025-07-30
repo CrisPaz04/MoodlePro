@@ -96,10 +96,11 @@ class Notification extends Model
 
     /**
      * Obtener el modelo relacionado polimórficamente
+     * CORREGIDO: morphTo() sin parámetros usa las convenciones de Laravel
      */
     public function related()
     {
-        return $this->morphTo('related', 'related_type', 'related_id');
+        return $this->morphTo();
     }
 
     /**
