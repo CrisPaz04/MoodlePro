@@ -1,130 +1,90 @@
+{{-- Ruta: resources/views/projects/show.blade.php --}}
 @extends('layouts.app')
 
-@section('title', $project->title . ' - MoodlePro')
+@section('title', $project->title)
 
 @push('styles')
 <style>
-    /* Project Header Styles */
-    .project-header-section {
-        background-color: #fff;
+    /* Project Header */
+    .project-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
         padding: 2rem;
-        margin-bottom: 2rem;
         border-radius: 0.5rem;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        margin-bottom: 2rem;
     }
 
-    .project-info {
-        display: flex;
-        justify-content: space-between;
-        align-items: start;
-        margin-bottom: 1.5rem;
-    }
-
-    .project-title-section h1 {
-        font-size: 1.75rem;
+    .project-header h1 {
+        font-size: 2rem;
         font-weight: 700;
-        color: #2e3440;
-        margin: 0 0 0.5rem 0;
+        margin-bottom: 0.5rem;
     }
 
     .project-meta {
         display: flex;
         gap: 2rem;
-        color: #858796;
-        font-size: 0.875rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
     }
 
-    .project-meta-item {
+    .meta-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-    }
-
-    .project-status-badge {
-        padding: 0.5rem 1rem;
-        border-radius: 2rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-    }
-
-    .status-planning {
-        background-color: rgba(246, 194, 62, 0.2);
-        color: #993d00;
-    }
-
-    .status-active {
-        background-color: rgba(28, 200, 138, 0.2);
-        color: #0f6848;
-    }
-
-    .status-completed {
-        background-color: rgba(78, 115, 223, 0.2);
-        color: #2e59d9;
+        opacity: 0.9;
     }
 
     /* Tabs */
-    .project-tabs {
+    .nav-tabs {
         border-bottom: 2px solid #e3e6f0;
         margin-bottom: 2rem;
     }
 
-    .nav-tabs {
-        border: none;
-    }
-
     .nav-tabs .nav-link {
-        border: none;
         color: #858796;
+        border: none;
         padding: 1rem 1.5rem;
         font-weight: 500;
-        border-bottom: 3px solid transparent;
         transition: all 0.3s;
     }
 
     .nav-tabs .nav-link:hover {
         color: #4e73df;
-        border-bottom-color: #e3e6f0;
+        border-bottom: 2px solid #4e73df;
     }
 
     .nav-tabs .nav-link.active {
         color: #4e73df;
-        border-bottom-color: #4e73df;
+        border-bottom: 2px solid #4e73df;
         background: none;
     }
 
-    /* Kanban Board Styles */
+    /* Kanban Board */
     .kanban-board {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
-        overflow-x: auto;
-        padding-bottom: 1rem;
-        min-height: 600px;
+        min-height: 500px;
     }
 
     .kanban-column {
-        background-color: #f8f9fc;
+        background: #f8f9fc;
         border-radius: 0.5rem;
         padding: 1rem;
-        min-width: 320px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
+        min-height: 400px;
     }
 
-    .kanban-header {
+    .column-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1rem;
-        padding-bottom: 1rem;
+        padding-bottom: 0.75rem;
         border-bottom: 2px solid #e3e6f0;
     }
 
-    .kanban-title {
-        font-size: 1rem;
-        font-weight: 700;
-        text-transform: uppercase;
+    .column-title {
+        font-weight: 600;
         color: #5a5c69;
         display: flex;
         align-items: center;
@@ -132,36 +92,44 @@
     }
 
     .task-count {
-        background-color: #e3e6f0;
+        background: #e3e6f0;
         color: #5a5c69;
-        padding: 0.25rem 0.5rem;
+        padding: 0.25rem 0.75rem;
         border-radius: 1rem;
-        font-size: 0.75rem;
-        font-weight: 600;
+        font-size: 0.875rem;
+        font-weight: 500;
     }
 
-    .kanban-tasks {
-        flex: 1;
-        overflow-y: auto;
-        padding-right: 0.5rem;
+    .tasks-container {
+        min-height: 300px;
+        transition: background-color 0.3s;
     }
 
-    /* Task Card Styles */
+    .tasks-container.drag-over {
+        background-color: #e3e6f0;
+        border: 2px dashed #4e73df;
+        border-radius: 0.5rem;
+    }
+
+    /* Task Cards */
     .task-card {
-        background-color: #fff;
+        background: white;
         border-radius: 0.5rem;
         padding: 1rem;
         margin-bottom: 0.75rem;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         cursor: move;
         transition: all 0.3s;
         position: relative;
-        border-left: 4px solid transparent;
     }
 
     .task-card:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         transform: translateY(-2px);
+    }
+
+    .task-card:hover .task-actions {
+        opacity: 1;
     }
 
     .task-card.dragging {
@@ -169,80 +137,67 @@
         transform: rotate(5deg);
     }
 
-    .task-card.drag-over {
-        border: 2px dashed #4e73df;
-        background-color: #f8f9fc;
-    }
-
-    /* Priority Indicators */
-    .task-card.priority-high {
-        border-left-color: #e74a3b;
-    }
-
-    .task-card.priority-medium {
-        border-left-color: #f6c23e;
-    }
-
-    .task-card.priority-low {
-        border-left-color: #1cc88a;
-    }
-
-    .task-header {
+    .task-actions {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        opacity: 0;
+        transition: opacity 0.3s;
         display: flex;
-        justify-content: space-between;
-        align-items: start;
-        margin-bottom: 0.5rem;
+        gap: 0.25rem;
+    }
+
+    .task-actions button {
+        background: #f8f9fc;
+        border: none;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        color: #5a5c69;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .task-actions button:hover {
+        background: #e3e6f0;
+        color: #2e3440;
+    }
+
+    .task-actions button.delete-btn:hover {
+        background: #ffe6e6;
+        color: #e74a3b;
+    }
+
+    .task-priority {
+        display: inline-block;
+        width: 4px;
+        height: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        border-radius: 0.5rem 0 0 0.5rem;
+    }
+
+    .priority-high { background: #e74a3b; }
+    .priority-medium { background: #f6c23e; }
+    .priority-low { background: #1cc88a; }
+
+    .task-content {
+        position: relative;
+        padding-left: 0.5rem;
     }
 
     .task-title {
         font-weight: 600;
         color: #2e3440;
-        margin: 0;
-        font-size: 0.9375rem;
-        flex: 1;
-        padding-right: 0.5rem;
+        margin-bottom: 0.5rem;
     }
 
-    .task-priority {
-        font-size: 0.75rem;
-        padding: 0.125rem 0.5rem;
-        border-radius: 1rem;
-        font-weight: 600;
-        text-transform: capitalize;
-        white-space: nowrap;
-    }
-
-    .priority-high {
-        background-color: rgba(231, 74, 59, 0.2);
-        color: #a71d2a;
-    }
-
-    .priority-medium {
-        background-color: rgba(246, 194, 62, 0.2);
-        color: #993d00;
-    }
-
-    .priority-low {
-        background-color: rgba(28, 200, 138, 0.2);
-        color: #0f6848;
-    }
-
-    .task-description {
-        font-size: 0.8125rem;
-        color: #858796;
-        margin-bottom: 0.75rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .task-footer {
+    .task-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.75rem;
-        color: #858796;
+        margin-top: 0.75rem;
     }
 
     .task-assignee {
@@ -255,10 +210,18 @@
         width: 24px;
         height: 24px;
         border-radius: 50%;
-        object-fit: cover;
+        background: #4e73df;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
     }
 
     .task-due-date {
+        font-size: 0.75rem;
+        color: #858796;
         display: flex;
         align-items: center;
         gap: 0.25rem;
@@ -266,276 +229,335 @@
 
     .task-due-date.overdue {
         color: #e74a3b;
-        font-weight: 600;
     }
 
     /* Add Task Button */
     .add-task-btn {
-        background-color: transparent;
-        border: 2px dashed #d1d3e2;
-        color: #858796;
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        cursor: pointer;
-        text-align: center;
-        margin-top: 0.5rem;
-        transition: all 0.3s;
-        font-weight: 500;
         width: 100%;
+        padding: 0.75rem;
+        border: 2px dashed #d1d3e2;
+        background: transparent;
+        color: #858796;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
 
     .add-task-btn:hover {
-        background-color: #fff;
         border-color: #4e73df;
         color: #4e73df;
+        background: #f8f9fc;
     }
 
-    /* Task Actions */
-    .task-actions {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-
-    .task-card:hover .task-actions {
-        opacity: 1;
-    }
-
-    .task-action-btn {
-        background: none;
-        border: none;
-        color: #858796;
-        padding: 0.25rem;
-        cursor: pointer;
-        font-size: 0.875rem;
-        transition: color 0.3s;
-    }
-
-    .task-action-btn:hover {
-        color: #4e73df;
-    }
-
-    /* Empty State */
-    .empty-column {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: #b7b9cc;
-    }
-
-    .empty-column i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.3;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .kanban-board {
-            flex-direction: column;
-        }
-        
-        .kanban-column {
-            min-width: 100%;
-            margin-bottom: 1rem;
-        }
-
-        .project-info {
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .project-meta {
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-    }
-
-    /* Loading State */
-    .task-skeleton {
-        background-color: #f1f3f4;
+    /* Members Section */
+    .member-card {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: white;
         border-radius: 0.5rem;
-        height: 120px;
-        margin-bottom: 0.75rem;
-        animation: pulse 1.5s infinite;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
     }
 
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.6; }
-        100% { opacity: 1; }
+    .member-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        margin-right: 1rem;
+    }
+
+    .member-info h6 {
+        margin: 0;
+        color: #2e3440;
+    }
+
+    .member-role {
+        color: #858796;
+        font-size: 0.875rem;
+    }
+
+    /* Alert Messages */
+    .alert {
+        border-radius: 0.5rem;
+        border: none;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .alert-success {
+        background-color: #d1f2eb;
+        color: #0c5f4c;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
     }
 </style>
 @endpush
 
 @section('content')
-<!-- Project Header -->
-<div class="project-header-section">
-    <div class="project-info">
-        <div class="project-title-section">
-            <h1>{{ $project->title }}</h1>
-            <div class="project-meta">
-                <div class="project-meta-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Inicio: {{ $project->start_date->format('d M Y') }}</span>
-                </div>
-                <div class="project-meta-item">
-                    <i class="fas fa-clock"></i>
-                    <span>Entrega: {{ $project->deadline->format('d M Y') }}</span>
-                </div>
-                <div class="project-meta-item">
-                    <i class="fas fa-users"></i>
-                    <span>{{ $project->members->count() }} miembros</span>
-                </div>
-            </div>
+<div class="container-fluid">
+    <!-- Mensajes de éxito/error -->
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-        <div>
-            <span class="project-status-badge status-{{ $project->status }}">
-                {{ ucfirst($project->status) }}
-            </span>
-        </div>
-    </div>
-
-    @if($project->description)
-    <p class="text-muted mb-0">{{ $project->description }}</p>
     @endif
-</div>
 
-<!-- Tabs -->
-<ul class="nav nav-tabs project-tabs" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link active" data-bs-toggle="tab" href="#kanban">
-            <i class="fas fa-columns me-2"></i>Tablero Kanban
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#members">
-            <i class="fas fa-users me-2"></i>Miembros
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#files">
-            <i class="fas fa-file-alt me-2"></i>Archivos
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{{ route('projects.chat', $project) }}">
-            <i class="fas fa-comments me-2"></i>Chat
-        </a>
-    </li>
-</ul>
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
 
-<!-- Tab Content -->
-<div class="tab-content">
-    <!-- Kanban Board Tab -->
-    <div class="tab-pane fade show active" id="kanban">
-        <div class="kanban-board">
-            <!-- TO DO Column -->
-            <div class="kanban-column" data-status="todo">
-                <div class="kanban-header">
-                    <h3 class="kanban-title">
-                        <i class="fas fa-circle-notch text-warning"></i>
-                        POR HACER
-                    </h3>
-                    <span class="task-count">{{ $tasksByStatus['todo']->count() }}</span>
-                </div>
-                <div class="kanban-tasks" data-status="todo">
-                    @forelse($tasksByStatus['todo'] as $task)
-                        @include('projects.partials.task-card', ['task' => $task])
-                    @empty
-                        <div class="empty-column">
-                            <i class="fas fa-tasks"></i>
-                            <p>No hay tareas pendientes</p>
+    <!-- Project Header -->
+    <div class="project-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1>{{ $project->title }}</h1>
+                <p class="mb-0 opacity-75">{{ $project->description }}</p>
+                <div class="project-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Creado por {{ $project->creator->name }}</span>
+                    </div>
+                    @if($project->start_date || $project->deadline)
+                        <div class="meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>
+                                @if($project->start_date && $project->deadline)
+                                    {{ $project->start_date->format('d M Y') }} - {{ $project->deadline->format('d M Y') }}
+                                @elseif($project->start_date)
+                                    Inicio: {{ $project->start_date->format('d M Y') }}
+                                @elseif($project->deadline)
+                                    Fin: {{ $project->deadline->format('d M Y') }}
+                                @endif
+                            </span>
                         </div>
-                    @endforelse
+                    @endif
+                    <div class="meta-item">
+                        <i class="fas fa-users"></i>
+                        <span>{{ $project->members->count() }} miembros</span>
+                    </div>
                 </div>
-                <button class="add-task-btn" onclick="openCreateTaskModal('todo')">
-                    <i class="fas fa-plus me-2"></i>Agregar tarea
-                </button>
             </div>
-
-            <!-- IN PROGRESS Column -->
-            <div class="kanban-column" data-status="in_progress">
-                <div class="kanban-header">
-                    <h3 class="kanban-title">
-                        <i class="fas fa-spinner text-info"></i>
-                        EN PROGRESO
-                    </h3>
-                    <span class="task-count">{{ $tasksByStatus['in_progress']->count() }}</span>
-                </div>
-                <div class="kanban-tasks" data-status="in_progress">
-                    @forelse($tasksByStatus['in_progress'] as $task)
-                        @include('projects.partials.task-card', ['task' => $task])
-                    @empty
-                        <div class="empty-column">
-                            <i class="fas fa-hourglass-half"></i>
-                            <p>No hay tareas en progreso</p>
-                        </div>
-                    @endforelse
-                </div>
-                <button class="add-task-btn" onclick="openCreateTaskModal('in_progress')">
-                    <i class="fas fa-plus me-2"></i>Agregar tarea
-                </button>
-            </div>
-
-            <!-- DONE Column -->
-            <div class="kanban-column" data-status="done">
-                <div class="kanban-header">
-                    <h3 class="kanban-title">
-                        <i class="fas fa-check-circle text-success"></i>
-                        COMPLETADAS
-                    </h3>
-                    <span class="task-count">{{ $tasksByStatus['done']->count() }}</span>
-                </div>
-                <div class="kanban-tasks" data-status="done">
-                    @forelse($tasksByStatus['done'] as $task)
-                        @include('projects.partials.task-card', ['task' => $task])
-                    @empty
-                        <div class="empty-column">
-                            <i class="fas fa-trophy"></i>
-                            <p>No hay tareas completadas</p>
-                        </div>
-                    @endforelse
-                </div>
-                <button class="add-task-btn" onclick="openCreateTaskModal('done')">
-                    <i class="fas fa-plus me-2"></i>Agregar tarea
-                </button>
-            </div>
+            @if(Auth::id() === $project->creator_id)
+                <a href="{{ route('projects.edit', $project) }}" class="btn btn-light">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+            @endif
         </div>
     </div>
 
-    <!-- Members Tab -->
-    <div class="tab-pane fade" id="members">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title mb-4">Miembros del Proyecto</h5>
-                <div class="row">
-                    @foreach($project->members as $member)
-                    <div class="col-md-6 mb-3">
-                        <div class="d-flex align-items-center">
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#tasks">
+                <i class="fas fa-tasks me-2"></i>Tareas
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#members">
+                <i class="fas fa-users me-2"></i>Miembros
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#files">
+                <i class="fas fa-folder me-2"></i>Archivos
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Tasks Tab (Kanban Board) -->
+        <div class="tab-pane fade show active" id="tasks">
+            <div class="kanban-board">
+                <!-- To Do Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h5 class="column-title">
+                            <i class="fas fa-circle text-secondary"></i>
+                            Por Hacer
+                        </h5>
+                        <span class="task-count">{{ $project->tasks->where('status', 'todo')->count() }}</span>
+                    </div>
+                    <div class="tasks-container" data-status="todo">
+                        @foreach($project->tasks->where('status', 'todo')->sortBy('order') as $task)
+                            <div class="task-card" draggable="true" data-task-id="{{ $task->id }}">
+                                <div class="task-priority priority-{{ $task->priority }}"></div>
+                                <div class="task-actions">
+                                    <button onclick="editTask({{ $task->id }})" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteTask({{ $task->id }})" class="delete-btn" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="task-content">
+                                    <h6 class="task-title">{{ $task->title }}</h6>
+                                    @if($task->description)
+                                        <p class="text-muted small mb-2">{{ Str::limit($task->description, 100) }}</p>
+                                    @endif
+                                    <div class="task-meta">
+                                        @if($task->assignedUser)
+                                            <div class="task-assignee">
+                                                <div class="assignee-avatar">
+                                                    {{ strtoupper(substr($task->assignedUser->name, 0, 1)) }}
+                                                </div>
+                                                <span class="small">{{ $task->assignedUser->name }}</span>
+                                            </div>
+                                        @else
+                                            <span class="small text-muted">Sin asignar</span>
+                                        @endif
+                                        @if($task->due_date)
+                                            <div class="task-due-date {{ $task->due_date->isPast() ? 'overdue' : '' }}">
+                                                <i class="fas fa-calendar-alt"></i>
+                                                {{ $task->due_date->format('d M') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <button class="add-task-btn" onclick="showCreateTaskModal('todo')">
+                        <i class="fas fa-plus"></i>
+                        Agregar tarea
+                    </button>
+                </div>
+
+                <!-- In Progress Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h5 class="column-title">
+                            <i class="fas fa-circle text-primary"></i>
+                            En Progreso
+                        </h5>
+                        <span class="task-count">{{ $project->tasks->where('status', 'in_progress')->count() }}</span>
+                    </div>
+                    <div class="tasks-container" data-status="in_progress">
+                        @foreach($project->tasks->where('status', 'in_progress')->sortBy('order') as $task)
+                            <div class="task-card" draggable="true" data-task-id="{{ $task->id }}">
+                                <div class="task-priority priority-{{ $task->priority }}"></div>
+                                <div class="task-content">
+                                    <h6 class="task-title">{{ $task->title }}</h6>
+                                    @if($task->description)
+                                        <p class="text-muted small mb-2">{{ Str::limit($task->description, 100) }}</p>
+                                    @endif
+                                    <div class="task-meta">
+                                        @if($task->assignedUser)
+                                            <div class="task-assignee">
+                                                <div class="assignee-avatar">
+                                                    {{ strtoupper(substr($task->assignedUser->name, 0, 1)) }}
+                                                </div>
+                                                <span class="small">{{ $task->assignedUser->name }}</span>
+                                            </div>
+                                        @else
+                                            <span class="small text-muted">Sin asignar</span>
+                                        @endif
+                                        @if($task->due_date)
+                                            <div class="task-due-date {{ $task->due_date->isPast() ? 'overdue' : '' }}">
+                                                <i class="fas fa-calendar-alt"></i>
+                                                {{ $task->due_date->format('d M') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <button class="add-task-btn" onclick="showCreateTaskModal('in_progress')">
+                        <i class="fas fa-plus"></i>
+                        Agregar tarea
+                    </button>
+                </div>
+
+                <!-- Done Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h5 class="column-title">
+                            <i class="fas fa-circle text-success"></i>
+                            Completado
+                        </h5>
+                        <span class="task-count">{{ $project->tasks->where('status', 'done')->count() }}</span>
+                    </div>
+                    <div class="tasks-container" data-status="done">
+                        @foreach($project->tasks->where('status', 'done')->sortBy('order') as $task)
+                            <div class="task-card" draggable="true" data-task-id="{{ $task->id }}">
+                                <div class="task-priority priority-{{ $task->priority }}"></div>
+                                <div class="task-content">
+                                    <h6 class="task-title">{{ $task->title }}</h6>
+                                    @if($task->description)
+                                        <p class="text-muted small mb-2">{{ Str::limit($task->description, 100) }}</p>
+                                    @endif
+                                    <div class="task-meta">
+                                        @if($task->assignedUser)
+                                            <div class="task-assignee">
+                                                <div class="assignee-avatar">
+                                                    {{ strtoupper(substr($task->assignedUser->name, 0, 1)) }}
+                                                </div>
+                                                <span class="small">{{ $task->assignedUser->name }}</span>
+                                            </div>
+                                        @else
+                                            <span class="small text-muted">Sin asignar</span>
+                                        @endif
+                                        @if($task->due_date)
+                                            <div class="task-due-date {{ $task->due_date->isPast() ? 'overdue' : '' }}">
+                                                <i class="fas fa-calendar-alt"></i>
+                                                {{ $task->due_date->format('d M') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <button class="add-task-btn" onclick="showCreateTaskModal('done')">
+                        <i class="fas fa-plus"></i>
+                        Agregar tarea
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Members Tab -->
+        <div class="tab-pane fade" id="members">
+            <div class="row">
+                @foreach($project->members as $member)
+                    <div class="col-md-6 col-lg-4">
+                        <div class="member-card">
                             <img src="https://ui-avatars.com/api/?name={{ urlencode($member->name) }}&background=4e73df&color=fff" 
                                  alt="{{ $member->name }}" 
-                                 class="rounded-circle me-3"
-                                 style="width: 48px; height: 48px;">
-                            <div>
-                                <h6 class="mb-0">{{ $member->name }}</h6>
-                                <small class="text-muted">{{ ucfirst($member->pivot->role) }}</small>
+                                 class="member-avatar">
+                            <div class="member-info">
+                                <h6>{{ $member->name }}</h6>
+                                <span class="member-role">
+                                    <i class="fas fa-user-tag me-1"></i>
+                                    {{ ucfirst($member->pivot->role) }}
+                                </span>
                             </div>
                         </div>
                     </div>
-                    @endforeach
-                </div>
+                @endforeach
             </div>
         </div>
-    </div>
 
-    <!-- Files Tab -->
-    <div class="tab-pane fade" id="files">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title mb-4">Archivos del Proyecto</h5>
-                <p class="text-muted">Los archivos del proyecto aparecerán aquí</p>
+        <!-- Files Tab -->
+        <div class="tab-pane fade" id="files">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Archivos del Proyecto</h5>
+                    <p class="text-muted">Los archivos del proyecto aparecerán aquí</p>
+                </div>
             </div>
         </div>
     </div>
@@ -556,9 +578,12 @@
                 </div>
                 
                 <div class="modal-body">
+                    <div id="taskErrors" class="alert alert-danger d-none"></div>
+                    
                     <div class="mb-3">
-                        <label for="taskTitle" class="form-label">Título</label>
+                        <label for="taskTitle" class="form-label">Título <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="taskTitle" name="title" required>
+                        <div class="invalid-feedback"></div>
                     </div>
                     
                     <div class="mb-3">
@@ -569,8 +594,8 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="taskPriority" class="form-label">Prioridad</label>
-                                <select class="form-select" id="taskPriority" name="priority">
+                                <label for="taskPriority" class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                <select class="form-select" id="taskPriority" name="priority" required>
                                     <option value="low">Baja</option>
                                     <option value="medium" selected>Media</option>
                                     <option value="high">Alta</option>
@@ -581,7 +606,9 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="taskDueDate" class="form-label">Fecha de entrega</label>
-                                <input type="date" class="form-control" id="taskDueDate" name="due_date">
+                                <input type="date" class="form-control" id="taskDueDate" name="due_date" 
+                                       min="{{ date('Y-m-d') }}">
+                                <div class="invalid-feedback"></div>
                             </div>
                         </div>
                     </div>
@@ -594,12 +621,16 @@
                                 <option value="{{ $member->id }}">{{ $member->name }}</option>
                             @endforeach
                         </select>
+                        <div class="invalid-feedback"></div>
                     </div>
                 </div>
                 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Crear Tarea</button>
+                    <button type="submit" class="btn btn-primary" id="createTaskBtn">
+                        <span class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                        Crear Tarea
+                    </button>
                 </div>
             </form>
         </div>
@@ -614,161 +645,207 @@
 // Variables globales
 let draggedTask = null;
 const projectId = {{ $project->id }};
+const taskModal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+
+// Función para mostrar el modal de crear tarea
+function showCreateTaskModal(status) {
+    // Limpiar el formulario
+    document.getElementById('createTaskForm').reset();
+    document.getElementById('taskStatus').value = status;
+    
+    // Limpiar errores previos
+    document.getElementById('taskErrors').classList.add('d-none');
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    // Mostrar el modal
+    taskModal.show();
+}
+
+// Manejar el envío del formulario de crear tarea
+document.getElementById('createTaskForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = document.getElementById('createTaskBtn');
+    const spinner = submitBtn.querySelector('.spinner-border');
+    const errorDiv = document.getElementById('taskErrors');
+    
+    // Limpiar errores previos
+    errorDiv.classList.add('d-none');
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    // Mostrar loading
+    submitBtn.disabled = true;
+    spinner.classList.remove('d-none');
+    
+    try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            }
+        });
+        
+        const responseText = await response.text();
+        console.log('Response status:', response.status);
+        console.log('Response text:', responseText);
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing JSON:', parseError);
+            console.error('Raw response:', responseText);
+            errorDiv.textContent = 'Error del servidor. La respuesta no es válida.';
+            errorDiv.classList.remove('d-none');
+            return;
+        }
+        
+        if (response.ok && data.success) {
+            // Éxito: recargar la página
+            window.location.reload();
+        } else {
+            // Manejar errores de validación
+            console.error('Error response:', data);
+            
+            if (data.errors) {
+                let errorMessages = [];
+                
+                // Errores de campos específicos
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    const input = form.querySelector(`[name="${field}"]`);
+                    if (input && field !== 'general') {
+                        input.classList.add('is-invalid');
+                        const feedback = input.parentElement.querySelector('.invalid-feedback');
+                        if (feedback) {
+                            feedback.textContent = messages[0];
+                        }
+                    }
+                    
+                    // Agregar al mensaje general
+                    if (field === 'general' || !input) {
+                        errorMessages.push(...messages);
+                    }
+                }
+                
+                // Mostrar errores generales
+                if (errorMessages.length > 0) {
+                    errorDiv.innerHTML = errorMessages.join('<br>');
+                    errorDiv.classList.remove('d-none');
+                }
+            } else {
+                // Si no hay estructura de errores, mostrar el mensaje o un genérico
+                errorDiv.textContent = data.message || 'Error al crear la tarea';
+                errorDiv.classList.remove('d-none');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        errorDiv.textContent = 'Error de conexión. Por favor intenta nuevamente.';
+        errorDiv.classList.remove('d-none');
+    } finally {
+        // Ocultar loading
+        submitBtn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+});
 
 // Inicializar Sortable.js para cada columna
 document.addEventListener('DOMContentLoaded', function() {
-    const columns = document.querySelectorAll('.kanban-tasks');
+    const columns = document.querySelectorAll('.tasks-container');
     
     columns.forEach(column => {
         new Sortable(column, {
-            group: 'shared',
+            group: 'tasks',
             animation: 150,
-            ghostClass: 'task-skeleton',
+            ghostClass: 'task-ghost',
             dragClass: 'dragging',
             onStart: function(evt) {
                 draggedTask = evt.item;
-                evt.item.classList.add('dragging');
             },
-            onEnd: function(evt) {
-                evt.item.classList.remove('dragging');
-                
+            onEnd: async function(evt) {
                 const taskId = evt.item.dataset.taskId;
                 const newStatus = evt.to.dataset.status;
                 const newOrder = evt.newIndex;
                 
-                // Actualizar en el servidor
-                updateTaskStatus(taskId, newStatus, newOrder);
-                
-                // Actualizar contadores
-                updateTaskCounts();
+                // Actualizar el estado de la tarea
+                try {
+                    const response = await fetch(`/tasks/${taskId}/status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            status: newStatus,
+                            order: newOrder
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Error al actualizar la tarea');
+                    }
+                    
+                    // Actualizar contadores
+                    updateTaskCounts();
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    // Revertir el cambio si hay error
+                    evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex]);
+                    alert('Error al actualizar la tarea. Por favor intenta nuevamente.');
+                }
             }
         });
     });
 });
 
-// Actualizar estado de tarea
-function updateTaskStatus(taskId, status, order) {
-    fetch(`/api/tasks/${taskId}/status`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            status: status,
-            order: order
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Tarea actualizada', 'success');
-        } else {
-            showNotification('Error al actualizar la tarea', 'error');
-            // Recargar página en caso de error
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error de conexión', 'error');
-    });
-}
-
-// Actualizar contadores de tareas
+// Función para actualizar los contadores de tareas
 function updateTaskCounts() {
-    const columns = ['todo', 'in_progress', 'done'];
-    
-    columns.forEach(status => {
-        const tasks = document.querySelectorAll(`[data-status="${status}"] .task-card`);
-        const counter = document.querySelector(`[data-status="${status}"] .task-count`);
-        if (counter) {
-            counter.textContent = tasks.length;
-        }
+    document.querySelectorAll('.kanban-column').forEach(column => {
+        const status = column.querySelector('.tasks-container').dataset.status;
+        const count = column.querySelectorAll('.task-card').length;
+        column.querySelector('.task-count').textContent = count;
     });
 }
 
-// Abrir modal de crear tarea
-function openCreateTaskModal(status = 'todo') {
-    document.getElementById('taskStatus').value = status;
-    const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
-    modal.show();
-}
-
-// Editar tarea
+// Función para editar tarea
 function editTask(taskId) {
     window.location.href = `/tasks/${taskId}/edit`;
 }
 
-// Eliminar tarea
+// Función para eliminar tarea
 function deleteTask(taskId) {
-    if (confirm('¿Estás seguro de eliminar esta tarea?')) {
-        fetch(`/tasks/${taskId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                document.querySelector(`[data-task-id="${taskId}"]`).remove();
-                updateTaskCounts();
-                showNotification('Tarea eliminada', 'success');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Error al eliminar la tarea', 'error');
-        });
+    if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/tasks/${taskId}`;
+        form.innerHTML = `
+            <input type="hidden" name="_method" value="DELETE">
+            <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
-// Mostrar notificación
-function showNotification(message, type = 'info') {
-    const alertClass = type === 'success' ? 'alert-success' : 
-                      type === 'error' ? 'alert-danger' : 'alert-info';
+// Drag and drop visual feedback
+document.querySelectorAll('.tasks-container').forEach(container => {
+    container.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
     
-    const notification = document.createElement('div');
-    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-    notification.style.zIndex = '9999';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+    container.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over');
+    });
     
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
-// Manejar envío del formulario de crear tarea
-document.getElementById('createTaskForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    
-    fetch(this.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Recargar la página para mostrar la nueva tarea
-            location.reload();
-        } else {
-            showNotification('Error al crear la tarea', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error de conexión', 'error');
+    container.addEventListener('drop', function() {
+        this.classList.remove('drag-over');
     });
 });
 </script>
