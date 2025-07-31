@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Actualizar el estado de la tarea
                 try {
-                    const response = await fetch(`/tasks/${taskId}/status`, {
+                    const response = await fetch(`/api/tasks/${taskId}/status`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
