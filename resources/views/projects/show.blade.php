@@ -34,6 +34,142 @@
         opacity: 0.9;
     }
 
+    /* Project Members Section */
+    .project-members-section {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #dee2e6;
+        margin-bottom: 2rem;
+    }
+
+    .members-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .member-card {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .member-card:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .member-avatar {
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .avatar-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .avatar-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .member-info {
+        flex: 1;
+    }
+
+    .member-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+        font-size: 1rem;
+    }
+
+    .member-email {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .member-role {
+        margin-bottom: 0.25rem;
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-right: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .role-badge.coordinator {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+
+    .role-badge.member {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #b8daff;
+    }
+
+    .role-badge.creator {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .member-joined {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .member-badge-self {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+
+    .no-members-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 2rem;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        background: #f8f9fa;
+    }
+
+    .no-members-message i {
+        font-size: 2rem;
+        display: block;
+    }
+
     /* Tabs */
     .nav-tabs {
         border-bottom: 2px solid #e3e6f0;
@@ -262,34 +398,6 @@
         background: #f8f9fc;
     }
 
-    /* Members Section */
-    .member-card {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        background: white;
-        border-radius: 0.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        margin-bottom: 1rem;
-    }
-
-    .member-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        margin-right: 1rem;
-    }
-
-    .member-info h6 {
-        margin: 0;
-        color: #2e3440;
-    }
-
-    .member-role {
-        color: #858796;
-        font-size: 0.875rem;
-    }
-
     /* Alert Messages */
     .alert {
         border-radius: 0.5rem;
@@ -306,6 +414,30 @@
     .alert-danger {
         background-color: #f8d7da;
         color: #721c24;
+    }
+
+    @media (max-width: 768px) {
+        .members-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .member-card {
+            padding: 0.75rem;
+        }
+        
+        .member-avatar {
+            margin-right: 0.75rem;
+        }
+        
+        .avatar-img,
+        .avatar-placeholder {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .avatar-placeholder {
+            font-size: 1rem;
+        }
     }
 </style>
 @endpush
@@ -362,6 +494,83 @@
                 <a href="{{ route('projects.edit', $project) }}" class="btn btn-light">
                     <i class="fas fa-edit me-2"></i>Editar
                 </a>
+            @endif
+        </div>
+    </div>
+
+    <!-- Project Members Section -->
+    <div class="project-members-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+                <i class="fas fa-users text-primary"></i>
+                Miembros del Equipo ({{ $project->members->count() }})
+            </h5>
+            
+            @if($project->creator_id === Auth::id() || 
+                ($project->members->where('id', Auth::id())->first() && 
+                 $project->members->where('id', Auth::id())->first()->pivot->role === 'coordinator'))
+                <a href="{{ route('projects.members', $project) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-user-cog"></i> Gestionar Miembros
+                </a>
+            @endif
+        </div>
+        
+        <div class="members-grid">
+            @foreach($project->members as $member)
+                <div class="member-card">
+                    <div class="member-avatar">
+                        @if($member->avatar)
+                            <img src="{{ asset('storage/' . $member->avatar) }}" alt="{{ $member->name }}" class="avatar-img">
+                        @else
+                            <div class="avatar-placeholder">
+                                {{ strtoupper(substr($member->name, 0, 1)) }}
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <div class="member-info">
+                        <div class="member-name">{{ $member->name }}</div>
+                        <div class="member-email">{{ $member->email }}</div>
+                        <div class="member-role">
+                            @if($member->pivot->role === 'coordinator')
+                                <span class="role-badge coordinator">
+                                    <i class="fas fa-crown"></i> Coordinador
+                                </span>
+                            @else
+                                <span class="role-badge member">
+                                    <i class="fas fa-user"></i> Miembro
+                                </span>
+                            @endif
+                            
+                            @if($member->id === $project->creator_id)
+                                <span class="role-badge creator">
+                                    <i class="fas fa-star"></i> Creador
+                                </span>
+                            @endif
+                        </div>
+                        <div class="member-joined">
+                            Se unió: {{ Carbon\Carbon::parse($member->pivot->joined_at)->format('d/m/Y') }}
+                        </div>
+                    </div>
+                    
+                    @if($member->id === Auth::id())
+                        <div class="member-badge-self">
+                            <span class="badge bg-success">Tú</span>
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+            
+            @if($project->members->count() === 0)
+                <div class="no-members-message">
+                    <i class="fas fa-user-plus text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No hay miembros adicionales en este proyecto</p>
+                    @if($project->creator_id === Auth::id())
+                        <a href="{{ route('projects.members', $project) }}" class="btn btn-primary btn-sm mt-2">
+                            <i class="fas fa-plus"></i> Agregar Miembros
+                        </a>
+                    @endif
+                </div>
             @endif
         </div>
     </div>

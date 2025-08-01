@@ -53,6 +53,10 @@ class Notification extends Model
     const TYPE_MESSAGE_RECEIVED = 'message_received';
     const TYPE_RESOURCE_SHARED = 'resource_shared';
     const TYPE_COMMENT_ADDED = 'comment_added';
+    
+    // NUEVOS TIPOS PARA EL SISTEMA DE MIEMBROS
+    const TYPE_MEMBER_ADDED_TO_PROJECT = 'member_added_to_project';
+    const TYPE_MEMBER_ADDED_NOTIFICATION = 'member_added_notification';
 
     /**
      * Iconos para cada tipo de notificación
@@ -68,6 +72,9 @@ class Notification extends Model
         self::TYPE_MESSAGE_RECEIVED => 'fas fa-comment',
         self::TYPE_RESOURCE_SHARED => 'fas fa-file-alt',
         self::TYPE_COMMENT_ADDED => 'fas fa-comment-dots',
+        // NUEVOS ICONOS
+        self::TYPE_MEMBER_ADDED_TO_PROJECT => 'fas fa-user-plus',
+        self::TYPE_MEMBER_ADDED_NOTIFICATION => 'fas fa-users',
     ];
 
     /**
@@ -84,6 +91,9 @@ class Notification extends Model
         self::TYPE_MESSAGE_RECEIVED => 'info',
         self::TYPE_RESOURCE_SHARED => 'primary',
         self::TYPE_COMMENT_ADDED => 'secondary',
+        // NUEVOS COLORES
+        self::TYPE_MEMBER_ADDED_TO_PROJECT => 'success',
+        self::TYPE_MEMBER_ADDED_NOTIFICATION => 'info',
     ];
 
     /**
@@ -272,6 +282,28 @@ class Notification extends Model
             'related_type' => Project::class,
             'related_id' => $project->id,
             'action_url' => route('projects.show', $project),
+        ]);
+    }
+
+    /**
+     * NUEVO: Crear notificación cuando te agregan a un proyecto
+     */
+    public static function memberAddedToProject(User $user, Project $project, User $addedBy)
+    {
+        return self::create([
+            'user_id' => $user->id,
+            'type' => self::TYPE_MEMBER_ADDED_TO_PROJECT,
+            'title' => 'Te agregaron a un proyecto',
+            'message' => 'Te han agregado al proyecto ":project_title". ¡Bienvenido al equipo!',
+            'data' => [
+                'project_title' => $project->title,
+                'project_id' => $project->id,
+                'added_by' => $addedBy->name,
+                'added_by_id' => $addedBy->id,
+            ],
+            'related_type' => Project::class,
+            'related_id' => $project->id,
+            'action_url' => route('projects.show', $project->id),
         ]);
     }
 

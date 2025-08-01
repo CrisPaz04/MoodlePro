@@ -1,334 +1,236 @@
 @extends('layouts.app')
 
-@section('title', 'Crear Nuevo Proyecto - MoodlePro')
+@section('title', 'Crear Nuevo Proyecto')
 
 @push('styles')
 <style>
+.create-project-container {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.form-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+    color: #6c757d;
+    margin: 0;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.required {
+    color: #e74c3c;
+}
+
+.date-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.members-input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.btn-add-member {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-add-member:hover {
+    background: #2980b9;
+}
+
+.members-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.member-tag {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.remove-member {
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.remove-member:hover {
+    opacity: 1;
+    color: #e74c3c;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.btn-loading {
+    position: relative;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    margin: auto;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.summary-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+}
+
+.summary-item {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.summary-label {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-value {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.summary-empty {
+    color: #adb5bd;
+    font-style: italic;
+}
+
+.error-alert {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    border: 1px solid #f5c6cb;
+}
+
+.success-alert {
+    background: #d4edda;
+    color: #155724;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    border: 1px solid #c3e6cb;
+}
+
+@media (max-width: 768px) {
     .create-project-container {
-        display: flex;
-        gap: 2rem;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .form-section, .summary-section {
-        background: white;
-        padding: 2rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    }
-
-    .form-section {
-        flex: 1.5;
-    }
-
-    .summary-section {
-        flex: 1;
-        position: sticky;
-        top: 2rem;
-        height: fit-content;
-    }
-
-    .section-header {
-        margin-bottom: 2rem;
-    }
-
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #2e3440;
-        margin-bottom: 0.5rem;
-    }
-
-    .section-subtitle {
-        color: #858796;
-        font-size: 0.875rem;
-    }
-
-    /* Form Styles */
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 600;
-        color: #5a5c69;
-        font-size: 0.875rem;
-    }
-
-    .form-label .required {
-        color: #e74a3b;
-        margin-left: 0.25rem;
-    }
-
-    .form-control, .form-select {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid #d1d3e2;
-        border-radius: 0.35rem;
-        font-size: 0.875rem;
-        transition: all 0.3s;
-        background-color: #fff;
-    }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #4e73df;
-        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
-        outline: none;
-    }
-
-    textarea.form-control {
-        min-height: 120px;
-        resize: vertical;
-    }
-
-    .form-text {
-        font-size: 0.75rem;
-        color: #858796;
-        margin-top: 0.25rem;
-    }
-
-    /* Date Inputs Row */
-    .date-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    /* Project Type Cards */
-    .project-types {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin-top: 0.5rem;
-    }
-
-    .type-card {
-        border: 2px solid #e3e6f0;
-        border-radius: 0.5rem;
+        grid-template-columns: 1fr;
         padding: 1rem;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        background-color: #fff;
     }
-
-    .type-card:hover {
-        border-color: #4e73df;
-        transform: translateY(-2px);
+    
+    .date-row {
+        grid-template-columns: 1fr;
     }
-
-    .type-card.selected {
-        border-color: #4e73df;
-        background-color: rgba(78, 115, 223, 0.1);
-    }
-
-    .type-card input[type="radio"] {
-        display: none;
-    }
-
-    .type-icon {
-        font-size: 2rem;
-        color: #4e73df;
-        margin-bottom: 0.5rem;
-    }
-
-    .type-name {
-        font-weight: 600;
-        color: #2e3440;
-        font-size: 0.875rem;
-    }
-
-    /* Team Members */
-    .members-input-group {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .members-input-group .form-control {
-        flex: 1;
-    }
-
-    .btn-add-member {
-        padding: 0.75rem 1rem;
-        background-color: #4e73df;
-        color: white;
-        border: none;
-        border-radius: 0.35rem;
-        cursor: pointer;
-        transition: all 0.3s;
-        white-space: nowrap;
-    }
-
-    .btn-add-member:hover {
-        background-color: #2e59d9;
-    }
-
-    .members-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-
-    .member-tag {
-        background-color: #e3e6f0;
-        color: #5a5c69;
-        padding: 0.375rem 0.75rem;
-        border-radius: 2rem;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .member-tag .remove-member {
-        cursor: pointer;
-        color: #858796;
-        transition: color 0.3s;
-    }
-
-    .member-tag .remove-member:hover {
-        color: #e74a3b;
-    }
-
-    /* Summary Section */
-    .summary-content {
-        padding: 1.5rem;
-        background-color: #f8f9fc;
-        border-radius: 0.5rem;
-    }
-
-    .summary-item {
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid #e3e6f0;
-    }
-
-    .summary-item:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
-    }
-
-    .summary-label {
-        font-size: 0.75rem;
-        color: #858796;
-        text-transform: uppercase;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-    }
-
-    .summary-value {
-        color: #2e3440;
-        font-weight: 500;
-    }
-
-    .summary-empty {
-        color: #b7b9cc;
-        font-style: italic;
-    }
-
-    /* Action Buttons */
-    .form-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-        margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 1px solid #e3e6f0;
-    }
-
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.35rem;
-        font-weight: 500;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.3s;
-        border: none;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .btn-secondary {
-        background-color: #858796;
-        color: white;
-    }
-
-    .btn-secondary:hover {
-        background-color: #6c6e7e;
-    }
-
-    .btn-primary {
-        background-color: #4e73df;
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background-color: #2e59d9;
-        transform: translateY(-1px);
-    }
-
-    /* Responsive */
-    @media (max-width: 992px) {
-        .create-project-container {
-            flex-direction: column;
-        }
-
-        .summary-section {
-            position: static;
-        }
-
-        .date-row {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    /* Loading State */
-    .btn-loading {
-        position: relative;
-        pointer-events: none;
-        opacity: 0.7;
-    }
-
-    .btn-loading::after {
-        content: "";
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        margin: auto;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        border: 2px solid transparent;
-        border-top-color: #ffffff;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
+}
 </style>
 @endpush
 
 @section('content')
 <div class="create-project-container">
-    <!-- Form Section -->
+    <!-- Main Form Section -->
     <div class="form-section">
         <div class="section-header">
             <h1 class="section-title">Crear Nuevo Proyecto</h1>
-            <p class="section-subtitle">Complete los detalles para iniciar tu proyecto académico</p>
+            <p class="section-subtitle">Inicia un nuevo proyecto académico y colabora con tu equipo</p>
         </div>
 
-        <form method="POST" action="{{ route('projects.store') }}" id="createProjectForm">
+        <!-- Messages -->
+        @if(session('error'))
+            <div class="error-alert">
+                <i class="fas fa-exclamation-triangle"></i> {{ session('error') }}
+            </div>
+        @endif
+
+        @if(session('success'))
+            <div class="success-alert">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+            </div>
+        @endif
+
+        <!-- Form -->
+        <form id="createProjectForm" action="{{ route('projects.store') }}" method="POST">
             @csrf
 
             <!-- Project Title -->
@@ -340,46 +242,20 @@
                        class="form-control @error('title') is-invalid @enderror" 
                        id="title" 
                        name="title" 
-                       placeholder="Ej: Sistema de Gestión Académica"
                        value="{{ old('title') }}"
+                       placeholder="Ej: Desarrollo de App Móvil para Gestión Estudiantil"
+                       maxlength="255"
                        required>
-                <div class="form-text">Ingrese un título descriptivo para tu proyecto</div>
+                <div class="form-text">Máximo 255 caracteres</div>
                 @error('title')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
 
-            <!-- Project Type -->
-            <div class="form-group">
-                <label class="form-label">Tipo de Proyecto</label>
-                <div class="project-types">
-                    <label class="type-card">
-                        <input type="radio" name="project_type" value="thesis" checked>
-                        <i class="fas fa-graduation-cap type-icon"></i>
-                        <div class="type-name">Tesis</div>
-                    </label>
-                    <label class="type-card">
-                        <input type="radio" name="project_type" value="capstone">
-                        <i class="fas fa-project-diagram type-icon"></i>
-                        <div class="type-name">Proyecto Final</div>
-                    </label>
-                    <label class="type-card">
-                        <input type="radio" name="project_type" value="research">
-                        <i class="fas fa-microscope type-icon"></i>
-                        <div class="type-name">Investigación</div>
-                    </label>
-                    <label class="type-card">
-                        <input type="radio" name="project_type" value="group">
-                        <i class="fas fa-users type-icon"></i>
-                        <div class="type-name">Trabajo Grupal</div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Description -->
+            <!-- Project Description -->
             <div class="form-group">
                 <label for="description" class="form-label">
-                    Descripción
+                    Descripción del Proyecto
                 </label>
                 <textarea class="form-control @error('description') is-invalid @enderror" 
                           id="description" 
@@ -441,7 +317,15 @@
                 <div class="members-list" id="membersList">
                     <!-- Members will be added here dynamically -->
                 </div>
-                <div class="form-text">Puedes agregar miembros ahora o después de crear el proyecto</div>
+                <div class="form-text">
+                    Puedes agregar miembros ahora o después de crear el proyecto.<br>
+                    <strong>Importante:</strong> Solo se agregarán usuarios que ya estén registrados en el sistema.
+                </div>
+                
+                <!-- Error alert for members -->
+                <div id="membersError" class="error-alert" style="display: none; margin-top: 0.5rem;">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="membersErrorText"></span>
+                </div>
             </div>
 
             <!-- Hidden input for members -->
@@ -475,11 +359,6 @@
             </div>
 
             <div class="summary-item">
-                <div class="summary-label">Tipo de Proyecto</div>
-                <div class="summary-value" id="summaryType">Tesis</div>
-            </div>
-
-            <div class="summary-item">
                 <div class="summary-label">Descripción</div>
                 <div class="summary-value" id="summaryDescription">
                     <span class="summary-empty">Sin descripción</span>
@@ -487,21 +366,16 @@
             </div>
 
             <div class="summary-item">
-                <div class="summary-label">Duración</div>
-                <div class="summary-value" id="summaryDuration">
-                    <span class="summary-empty">Selecciona las fechas</span>
-                </div>
-            </div>
-
-            <div class="summary-item">
                 <div class="summary-label">Fecha de Inicio</div>
-                <div class="summary-value" id="summaryStartDate">{{ date('d/m/Y') }}</div>
+                <div class="summary-value" id="summaryStartDate">
+                    <span class="summary-empty">No definida</span>
+                </div>
             </div>
 
             <div class="summary-item">
                 <div class="summary-label">Fecha de Entrega</div>
                 <div class="summary-value" id="summaryDeadline">
-                    <span class="summary-empty">Sin definir</span>
+                    <span class="summary-empty">No definida</span>
                 </div>
             </div>
 
@@ -518,113 +392,93 @@
 
 @push('scripts')
 <script>
-// Array to store team members
+// Team members array
 let teamMembers = [];
 
-// Project type names
-const projectTypeNames = {
-    'thesis': 'Tesis',
-    'capstone': 'Proyecto Final',
-    'research': 'Investigación',
-    'group': 'Trabajo Grupal'
-};
-
-// Update summary in real-time
-document.addEventListener('DOMContentLoaded', function() {
-    // Title update
-    document.getElementById('title').addEventListener('input', function() {
-        const value = this.value.trim();
-        const summaryTitle = document.getElementById('summaryTitle');
-        summaryTitle.innerHTML = value || '<span class="summary-empty">Sin título aún</span>';
-    });
-
-    // Description update
-    document.getElementById('description').addEventListener('input', function() {
-        const value = this.value.trim();
-        const summaryDesc = document.getElementById('summaryDescription');
-        summaryDesc.innerHTML = value || '<span class="summary-empty">Sin descripción</span>';
-    });
-
-    // Project type update
-    document.querySelectorAll('input[name="project_type"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            // Update selected card style
-            document.querySelectorAll('.type-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            this.closest('.type-card').classList.add('selected');
-            
-            // Update summary
-            document.getElementById('summaryType').textContent = projectTypeNames[this.value];
-        });
-    });
-
-    // Set initial selected type
-    document.querySelector('input[name="project_type"]:checked').closest('.type-card').classList.add('selected');
-
-    // Date updates
-    document.getElementById('start_date').addEventListener('change', updateDates);
-    document.getElementById('deadline').addEventListener('change', updateDates);
-
-    // Initialize dates
-    updateDates();
+// Real-time form updates for summary
+document.getElementById('title').addEventListener('input', function() {
+    const summaryTitle = document.getElementById('summaryTitle');
+    if (this.value.trim()) {
+        summaryTitle.textContent = this.value;
+    } else {
+        summaryTitle.innerHTML = '<span class="summary-empty">Sin título aún</span>';
+    }
 });
 
-// Update dates in summary
-function updateDates() {
-    const startDate = document.getElementById('start_date').value;
-    const deadline = document.getElementById('deadline').value;
-    
-    if (startDate) {
-        const formattedStart = new Date(startDate).toLocaleDateString('es-ES');
-        document.getElementById('summaryStartDate').textContent = formattedStart;
-        
-        // Update min date for deadline
-        document.getElementById('deadline').min = startDate;
+document.getElementById('description').addEventListener('input', function() {
+    const summaryDescription = document.getElementById('summaryDescription');
+    if (this.value.trim()) {
+        summaryDescription.textContent = this.value.substring(0, 100) + (this.value.length > 100 ? '...' : '');
+    } else {
+        summaryDescription.innerHTML = '<span class="summary-empty">Sin descripción</span>';
     }
-    
-    if (deadline) {
-        const formattedDeadline = new Date(deadline).toLocaleDateString('es-ES');
-        document.getElementById('summaryDeadline').textContent = formattedDeadline;
-    }
-    
-    // Calculate duration
-    if (startDate && deadline) {
-        const start = new Date(startDate);
-        const end = new Date(deadline);
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        let duration = '';
-        if (diffDays < 7) {
-            duration = `${diffDays} días`;
-        } else if (diffDays < 30) {
-            duration = `${Math.ceil(diffDays / 7)} semanas`;
-        } else {
-            duration = `${Math.ceil(diffDays / 30)} meses`;
-        }
-        
-        document.getElementById('summaryDuration').textContent = duration;
-    }
-}
+});
 
-// Add team member
+document.getElementById('start_date').addEventListener('change', function() {
+    const summaryStartDate = document.getElementById('summaryStartDate');
+    if (this.value) {
+        const date = new Date(this.value);
+        summaryStartDate.textContent = date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    } else {
+        summaryStartDate.innerHTML = '<span class="summary-empty">No definida</span>';
+    }
+});
+
+document.getElementById('deadline').addEventListener('change', function() {
+    const summaryDeadline = document.getElementById('summaryDeadline');
+    if (this.value) {
+        const date = new Date(this.value);
+        summaryDeadline.textContent = date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    } else {
+        summaryDeadline.innerHTML = '<span class="summary-empty">No definida</span>';
+    }
+});
+
+// Date validation
+document.getElementById('deadline').addEventListener('change', function() {
+    const startDate = document.getElementById('start_date').value;
+    const deadline = this.value;
+    
+    if (startDate && deadline && new Date(deadline) < new Date(startDate)) {
+        alert('La fecha de entrega no puede ser anterior a la fecha de inicio');
+        this.value = '';
+        document.getElementById('summaryDeadline').innerHTML = '<span class="summary-empty">No definida</span>';
+    }
+});
+
+// Add team member function
 function addMember() {
     const emailInput = document.getElementById('memberEmail');
     const email = emailInput.value.trim();
+    const errorDiv = document.getElementById('membersError');
+    const errorText = document.getElementById('membersErrorText');
     
-    if (!email) return;
+    // Hide previous errors
+    errorDiv.style.display = 'none';
     
     // Validate email
+    if (!email) {
+        showMemberError('Por favor ingresa un correo electrónico');
+        return;
+    }
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        alert('Por favor ingresa un correo electrónico válido');
+        showMemberError('Por favor ingresa un correo electrónico válido');
         return;
     }
     
     // Check if already added
     if (teamMembers.includes(email)) {
-        alert('Este miembro ya fue agregado');
+        showMemberError('Este miembro ya fue agregado');
         return;
     }
     
@@ -639,6 +493,20 @@ function addMember() {
     
     // Update hidden input
     document.getElementById('membersInput').value = JSON.stringify(teamMembers);
+}
+
+// Show member error
+function showMemberError(message) {
+    const errorDiv = document.getElementById('membersError');
+    const errorText = document.getElementById('membersErrorText');
+    
+    errorText.textContent = message;
+    errorDiv.style.display = 'block';
+    
+    // Hide after 5 seconds
+    setTimeout(() => {
+        errorDiv.style.display = 'none';
+    }, 5000);
 }
 
 // Remove team member
@@ -660,8 +528,9 @@ function updateMembersList() {
         // Update form list
         membersList.innerHTML = teamMembers.map(email => `
             <div class="member-tag">
+                <i class="fas fa-user"></i>
                 ${email}
-                <i class="fas fa-times remove-member" onclick="removeMember('${email}')"></i>
+                <i class="fas fa-times remove-member" onclick="removeMember('${email}')" title="Remover miembro"></i>
             </div>
         `).join('');
         
@@ -675,6 +544,7 @@ document.getElementById('createProjectForm').addEventListener('submit', function
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.classList.add('btn-loading');
     submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
 });
 
 // Handle enter key in member email input
@@ -684,5 +554,16 @@ document.getElementById('memberEmail').addEventListener('keypress', function(e) 
         addMember();
     }
 });
+
+// Load old members if validation failed
+@if(old('members'))
+    try {
+        teamMembers = @json(json_decode(old('members'), true)) || [];
+        updateMembersList();
+        document.getElementById('membersInput').value = @json(old('members'));
+    } catch(e) {
+        console.error('Error loading old members:', e);
+    }
+@endif
 </script>
 @endpush
