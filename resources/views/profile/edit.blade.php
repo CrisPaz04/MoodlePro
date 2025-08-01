@@ -33,6 +33,20 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-lg-8 mx-auto">
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" id="profileForm">
                 @csrf
                 @method('PUT')
@@ -55,7 +69,7 @@
                                            class="form-control @error('name') is-invalid @enderror" 
                                            id="name" 
                                            name="name" 
-                                           value="{{ old('name', Auth::user()->name) }}" 
+                                           value="{{ old('name', $user->name) }}" 
                                            required>
                                     @error('name')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -72,7 +86,7 @@
                                            class="form-control @error('email') is-invalid @enderror" 
                                            id="email" 
                                            name="email" 
-                                           value="{{ old('email', Auth::user()->email) }}" 
+                                           value="{{ old('email', $user->email) }}" 
                                            required>
                                     @error('email')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -91,7 +105,7 @@
                                            class="form-control @error('phone') is-invalid @enderror" 
                                            id="phone" 
                                            name="phone" 
-                                           value="{{ old('phone', $profile->phone ?? '') }}"
+                                           value="{{ old('phone', $user->phone) }}"
                                            placeholder="+504 9999-9999">
                                     @error('phone')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -108,7 +122,7 @@
                                            class="form-control @error('birth_date') is-invalid @enderror" 
                                            id="birth_date" 
                                            name="birth_date" 
-                                           value="{{ old('birth_date', $profile->birth_date ?? '') }}">
+                                           value="{{ old('birth_date', $user->birth_date) }}">
                                     @error('birth_date')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -124,7 +138,7 @@
                                       id="bio" 
                                       name="bio" 
                                       rows="3"
-                                      placeholder="Cuéntanos un poco sobre ti...">{{ old('bio', $profile->bio ?? '') }}</textarea>
+                                      placeholder="Cuéntanos un poco sobre ti...">{{ old('bio', $user->bio) }}</textarea>
                             @error('bio')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -150,7 +164,7 @@
                                            class="form-control @error('institution') is-invalid @enderror" 
                                            id="institution" 
                                            name="institution" 
-                                           value="{{ old('institution', $profile->institution ?? '') }}"
+                                           value="{{ old('institution', $user->institution) }}"
                                            placeholder="Universidad Nacional Autónoma de Honduras">
                                     @error('institution')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -167,7 +181,7 @@
                                            class="form-control @error('career') is-invalid @enderror" 
                                            id="career" 
                                            name="career" 
-                                           value="{{ old('career', $profile->career ?? '') }}"
+                                           value="{{ old('career', $user->career) }}"
                                            placeholder="Ingeniería en Sistemas">
                                     @error('career')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -187,7 +201,7 @@
                                             name="semester">
                                         <option value="">Selecciona tu semestre</option>
                                         @for($i = 1; $i <= 10; $i++)
-                                            <option value="{{ $i }}" {{ old('semester', $profile->semester ?? '') == $i ? 'selected' : '' }}>
+                                            <option value="{{ $i }}" {{ old('semester', $user->semester) == $i ? 'selected' : '' }}>
                                                 {{ $i }}° Semestre
                                             </option>
                                         @endfor
@@ -207,7 +221,7 @@
                                            class="form-control @error('student_id') is-invalid @enderror" 
                                            id="student_id" 
                                            name="student_id" 
-                                           value="{{ old('student_id', $profile->student_id ?? '') }}"
+                                           value="{{ old('student_id', $user->student_id) }}"
                                            placeholder="20XX XXXX XXXX">
                                     @error('student_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -224,12 +238,9 @@
                                    class="form-control @error('languages') is-invalid @enderror" 
                                    id="languages" 
                                    name="languages" 
-                                   value="{{ old('languages', $profile->languages ?? '') }}"
-                                   placeholder="Español (nativo), Inglés (intermedio)">
-                            <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Separa los idiomas con comas e indica tu nivel
-                            </div>
+                                   value="{{ old('languages', $user->languages) }}"
+                                   placeholder="Español, Inglés, Francés">
+                            <small class="form-text text-muted">Separa los idiomas con comas</small>
                             @error('languages')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -241,7 +252,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-lock me-2"></i>Cambiar Contraseña
+                            <i class="fas fa-key me-2"></i>Cambiar Contraseña
                         </h5>
                     </div>
                     <div class="card-body">
@@ -249,12 +260,12 @@
                             <i class="fas fa-info-circle me-2"></i>
                             Deja estos campos vacíos si no deseas cambiar tu contraseña
                         </div>
-
+                        
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="current_password" class="form-label">
-                                        <i class="fas fa-key me-2"></i>Contraseña Actual
+                                        <i class="fas fa-lock me-2"></i>Contraseña Actual
                                     </label>
                                     <input type="password" 
                                            class="form-control @error('current_password') is-invalid @enderror" 
@@ -265,10 +276,8 @@
                                     @enderror
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
+                            
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="password" class="form-label">
                                         <i class="fas fa-lock me-2"></i>Nueva Contraseña
@@ -283,7 +292,7 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="password_confirmation" class="form-label">
                                         <i class="fas fa-lock me-2"></i>Confirmar Nueva Contraseña
@@ -316,7 +325,7 @@
                                                id="email_notifications" 
                                                name="email_notifications" 
                                                value="1"
-                                               {{ old('email_notifications', $profile->email_notifications ?? true) ? 'checked' : '' }}>
+                                               {{ old('email_notifications', $user->email_notifications ?? true) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="email_notifications">
                                             Recibir notificaciones por correo electrónico
                                         </label>
@@ -333,59 +342,29 @@
                                                id="public_profile" 
                                                name="public_profile" 
                                                value="1"
-                                               {{ old('public_profile', $profile->public_profile ?? true) ? 'checked' : '' }}>
+                                               {{ old('public_profile', $user->public_profile ?? true) ? 'checked' : '' }}>
                                         <label class="form-check-label" for="public_profile">
-                                            Perfil visible para otros usuarios
+                                            Hacer mi perfil visible para otros usuarios
                                         </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="timezone" class="form-label">
-                                <i class="fas fa-clock me-2"></i>Zona Horaria
-                            </label>
-                            <select class="form-select @error('timezone') is-invalid @enderror" 
-                                    id="timezone" 
-                                    name="timezone">
-                                <option value="America/Tegucigalpa" {{ old('timezone', $profile->timezone ?? 'America/Tegucigalpa') == 'America/Tegucigalpa' ? 'selected' : '' }}>
-                                    (UTC-6) Tegucigalpa
-                                </option>
-                                <option value="America/Mexico_City" {{ old('timezone', $profile->timezone ?? '') == 'America/Mexico_City' ? 'selected' : '' }}>
-                                    (UTC-6) Ciudad de México
-                                </option>
-                                <option value="America/New_York" {{ old('timezone', $profile->timezone ?? '') == 'America/New_York' ? 'selected' : '' }}>
-                                    (UTC-5) Nueva York
-                                </option>
-                                <option value="America/Los_Angeles" {{ old('timezone', $profile->timezone ?? '') == 'America/Los_Angeles' ? 'selected' : '' }}>
-                                    (UTC-8) Los Ángeles
-                                </option>
-                            </select>
-                            @error('timezone')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
                     </div>
                 </div>
 
                 <!-- Botones de Acción -->
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <a href="{{ route('profile.show') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Cancelar
-                            </a>
-                            
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-outline-primary" onclick="previewChanges()">
-                                    <i class="fas fa-eye me-2"></i>Vista Previa
-                                </button>
-                                <button type="submit" class="btn btn-primary" id="saveBtn">
-                                    <i class="fas fa-save me-2"></i>Guardar Cambios
-                                </button>
-                            </div>
-                        </div>
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <a href="{{ route('profile.show') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary" onclick="previewChanges()">
+                            <i class="fas fa-eye me-2"></i>Vista Previa
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="saveBtn">
+                            <i class="fas fa-save me-2"></i>Guardar Cambios
+                        </button>
                     </div>
                 </div>
             </form>
@@ -460,6 +439,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('profileForm');
     const saveBtn = document.getElementById('saveBtn');
     
+    if (!form || !saveBtn) {
+        console.error('Form or save button not found');
+        return;
+    }
+    
     // Validación en tiempo real
     const inputs = form.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
@@ -488,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Loading state al enviar
-    form.addEventListener('submit', function() {
+    form.addEventListener('submit', function(e) {
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
         saveBtn.disabled = true;
         formChanged = false;
@@ -496,13 +480,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function previewChanges() {
-    // Implementar vista previa de cambios
-    const formData = new FormData(document.getElementById('profileForm'));
+    const form = document.getElementById('profileForm');
+    if (!form) return;
+    
+    const formData = new FormData(form);
     
     let preview = 'Vista previa de cambios:\n\n';
     for (let [key, value] of formData.entries()) {
-        if (value && !key.includes('password')) {
-            preview += `${key}: ${value}\n`;
+        if (value && !key.includes('password') && !key.includes('_token') && !key.includes('_method')) {
+            // Formatear el nombre del campo
+            let fieldName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            preview += `${fieldName}: ${value}\n`;
         }
     }
     
