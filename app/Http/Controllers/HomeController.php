@@ -74,7 +74,7 @@ class HomeController extends Controller
             ->get();
 
         // Actividad reciente (últimos 10 eventos)
-        $recentActivity = $this->getRecentActivity($user, 10);
+        $recentActivity = collect(); // Por ahora vacío, se carga por AJAX
 
         return view('dashboard.index', compact(
             'stats', 
@@ -115,15 +115,86 @@ class HomeController extends Controller
 
     /**
      * API: Obtener actividad reciente
+     * CORREGIDO: Nombre del método debe coincidir con la ruta
      */
-    public function getActivity(Request $request)
+    public function getRecentActivity(Request $request)
     {
         $limit = $request->get('limit', 20);
         $user = Auth::user();
         
-        $activity = $this->getRecentActivity($user, $limit);
-        
-        return response()->json($activity);
+        $activities = collect();
+
+        try {
+            // Tareas creadas recientemente
+            $recentTasks = Task::where('created_by', $user->id)
+                ->orWhere('assigned_to', $user->id)
+                ->with(['project'])
+                ->orderBy('created_at', 'desc')
+                ->take($limit)
+                ->get()
+                ->map(function ($task) {
+                    return [
+                        'type' => 'task_created',
+                        'title' => "Nueva tarea: {$task->title}",
+                        'description' => "En proyecto: {$task->project->title}",
+                        'date' => $task->created_at->toIso8601String(),
+                        'icon' => 'tasks',
+                        'color' => 'primary'
+                    ];
+                });
+
+            $activities = $activities->merge($recentTasks);
+
+            // Mensajes recientes
+            $recentMessages = Message::where('user_id', $user->id)
+                ->with(['project'])
+                ->orderBy('created_at', 'desc')
+                ->take($limit)
+                ->get()
+                ->map(function ($message) {
+                    return [
+                        'type' => 'message_sent',
+                        'title' => "Mensaje en: {$message->project->title}",
+                        'description' => substr($message->content, 0, 50) . '...',
+                        'date' => $message->created_at->toIso8601String(),
+                        'icon' => 'comment',
+                        'color' => 'info'
+                    ];
+                });
+
+            $activities = $activities->merge($recentMessages);
+
+            // Recursos subidos
+            $recentResources = Resource::where('uploaded_by', $user->id)
+                ->with(['project'])
+                ->orderBy('created_at', 'desc')
+                ->take($limit)
+                ->get()
+                ->map(function ($resource) {
+                    return [
+                        'type' => 'resource_uploaded',
+                        'title' => "Recurso subido: {$resource->title}",
+                        'description' => "En proyecto: {$resource->project->title}",
+                        'date' => $resource->created_at->toIso8601String(),
+                        'icon' => 'file-upload',
+                        'color' => 'success'
+                    ];
+                });
+
+            $activities = $activities->merge($recentResources);
+
+            // Ordenar por fecha y limitar
+            $activities = $activities->sortByDesc('date')->take($limit)->values();
+
+            return response()->json($activities);
+
+        } catch (\Exception $e) {
+            // Log del error para debugging
+            \Log::error('Error en getRecentActivity: ' . $e->getMessage());
+            
+            // Retornar array vacío en caso de error
+            return response()->json([]);
+        }
     }
 
     /**
@@ -152,262 +223,161 @@ class HomeController extends Controller
     }
 
     /**
-     * Obtener actividad reciente del usuario
-     */
-    private function getRecentActivity($user, $limit = 10)
-    {
-        $activities = collect();
-
-        // Tareas creadas recientemente
-        $recentTasks = Task::where('created_by', $user->id)
-            ->orWhere('assigned_to', $user->id)
-            ->with(['project'])
-            ->orderBy('created_at', 'desc')
-            ->take($limit)
-            ->get()
-            ->map(function ($task) {
-                return [
-                    'type' => 'task_created',
-                    'title' => "Nueva tarea: {$task->title}",
-                    'description' => "En proyecto: {$task->project->title}",
-                    'date' => $task->created_at,
-                    'icon' => 'tasks',
-                    'color' => 'primary'
-                ];
-            });
-
-        $activities = $activities->merge($recentTasks);
-
-        // Mensajes recientes
-        $recentMessages = Message::where('user_id', $user->id)
-            ->with(['project'])
-            ->orderBy('created_at', 'desc')
-            ->take($limit)
-            ->get()
-            ->map(function ($message) {
-                return [
-                    'type' => 'message_sent',
-                    'title' => "Mensaje en: {$message->project->title}",
-                    'description' => substr($message->content, 0, 50) . '...',
-                    'date' => $message->created_at,
-                    'icon' => 'comment',
-                    'color' => 'info'
-                ];
-            });
-
-        $activities = $activities->merge($recentMessages);
-
-        // Recursos subidos
-        $recentResources = Resource::where('uploaded_by', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->take($limit)
-            ->get()
-            ->map(function ($resource) {
-                return [
-                    'type' => 'resource_uploaded',
-                    'title' => "Recurso subido: {$resource->title}",
-                    'description' => "Categoría: {$resource->category}",
-                    'date' => $resource->created_at,
-                    'icon' => 'file-upload',
-                    'color' => 'success'
-                ];
-            });
-
-        $activities = $activities->merge($recentResources);
-
-        // Ordenar por fecha y limitar
-        return $activities->sortByDesc('date')->take($limit)->values();
-    }
-
-    /**
-     * Datos para gráfico de progreso de tareas
+     * Gráfico de progreso de tareas
      */
     private function getTaskProgressChart($user)
     {
-        $projects = $user->projects()->with('tasks')->get();
-        
-        $labels = [];
-        $todoData = [];
-        $inProgressData = [];
-        $doneData = [];
-        
-        foreach ($projects as $project) {
-            $labels[] = $project->title;
-            $tasks = $project->tasks;
-            
-            $todoData[] = $tasks->where('status', 'todo')->count();
-            $inProgressData[] = $tasks->where('status', 'in_progress')->count();
-            $doneData[] = $tasks->where('status', 'done')->count();
-        }
-        
-        return response()->json([
-            'labels' => $labels,
-            'datasets' => [
-                [
-                    'label' => 'Por hacer',
-                    'data' => $todoData,
-                    'backgroundColor' => '#f6c23e',
+        $data = [
+            'labels' => ['Por hacer', 'En progreso', 'Completadas'],
+            'datasets' => [[
+                'label' => 'Tareas',
+                'data' => [
+                    $user->assignedTasks()->where('status', 'todo')->count(),
+                    $user->assignedTasks()->where('status', 'in_progress')->count(),
+                    $user->assignedTasks()->where('status', 'done')->count(),
                 ],
-                [
-                    'label' => 'En progreso',
-                    'data' => $inProgressData,
-                    'backgroundColor' => '#36b9cc',
-                ],
-                [
-                    'label' => 'Completadas',
-                    'data' => $doneData,
-                    'backgroundColor' => '#1cc88a',
-                ]
-            ]
-        ]);
-    }
-
-    /**
-     * Datos para timeline de proyectos
-     */
-    private function getProjectTimelineChart($user)
-    {
-        $projects = $user->projects()
-            ->orderBy('start_date')
-            ->get();
-            
-        $data = $projects->map(function ($project) {
-            return [
-                'name' => $project->title,
-                'start' => $project->start_date->format('Y-m-d'),
-                'end' => $project->deadline->format('Y-m-d'),
-                'progress' => $project->tasks->count() > 0 
-                    ? round(($project->tasks->where('status', 'done')->count() / $project->tasks->count()) * 100)
-                    : 0,
-                'status' => $project->status
-            ];
-        });
+                'backgroundColor' => ['#FFA500', '#87CEEB', '#28a745'],
+                'borderColor' => ['#ff8c00', '#4682b4', '#218838'],
+                'borderWidth' => 1
+            ]]
+        ];
         
         return response()->json($data);
     }
 
     /**
-     * Datos para gráfico de productividad
+     * Gráfico de línea de tiempo de proyectos
+     */
+    private function getProjectTimelineChart($user)
+    {
+        $lastSixMonths = [];
+        $projectCounts = [];
+        
+        for ($i = 5; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $lastSixMonths[] = $date->format('M Y');
+            
+            $count = $user->projects()
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+                
+            $projectCounts[] = $count;
+        }
+        
+        $data = [
+            'labels' => $lastSixMonths,
+            'datasets' => [[
+                'label' => 'Proyectos creados',
+                'data' => $projectCounts,
+                'fill' => false,
+                'borderColor' => '#007bff',
+                'tension' => 0.1
+            ]]
+        ];
+        
+        return response()->json($data);
+    }
+
+    /**
+     * Gráfico de productividad
      */
     private function getProductivityChart($user)
     {
-        $endDate = now();
-        $startDate = now()->subDays(30);
+        $lastSevenDays = [];
+        $tasksCompleted = [];
         
-        $tasksCompleted = Task::where('assigned_to', $user->id)
-            ->where('status', 'done')
-            ->whereBetween('updated_at', [$startDate, $endDate])
-            ->selectRaw('DATE(updated_at) as date, COUNT(*) as count')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $lastSevenDays[] = $date->format('D');
             
-        $labels = [];
-        $data = [];
-        
-        // Llenar todos los días del período
-        for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
-            $dateStr = $date->format('Y-m-d');
-            $labels[] = $date->format('M d');
-            
-            $completed = $tasksCompleted->firstWhere('date', $dateStr);
-            $data[] = $completed ? $completed->count : 0;
+            $count = $user->assignedTasks()
+                ->where('status', 'done')
+                ->whereDate('updated_at', $date->toDateString())
+                ->count();
+                
+            $tasksCompleted[] = $count;
         }
         
-        return response()->json([
-            'labels' => $labels,
-            'datasets' => [
-                [
-                    'label' => 'Tareas completadas',
-                    'data' => $data,
-                    'borderColor' => '#4e73df',
-                    'backgroundColor' => 'rgba(78, 115, 223, 0.1)',
-                    'tension' => 0.3
-                ]
-            ]
-        ]);
+        $data = [
+            'labels' => $lastSevenDays,
+            'datasets' => [[
+                'label' => 'Tareas completadas',
+                'data' => $tasksCompleted,
+                'backgroundColor' => 'rgba(40, 167, 69, 0.2)',
+                'borderColor' => '#28a745',
+                'borderWidth' => 2,
+                'fill' => true
+            ]]
+        ];
+        
+        return response()->json($data);
     }
 
     /**
-     * Datos para gráfico de carga de trabajo
+     * Gráfico de carga de trabajo
      */
     private function getWorkloadChart($user)
     {
-        $tasks = $user->assignedTasks()
-            ->where('status', '!=', 'done')
-            ->whereNotNull('due_date')
-            ->where('due_date', '>=', now())
-            ->where('due_date', '<=', now()->addDays(14))
-            ->get();
-            
-        $workloadByDay = [];
+        $projects = $user->projects()->withCount(['tasks' => function ($query) use ($user) {
+            $query->where('assigned_to', $user->id);
+        }])->get();
         
-        for ($i = 0; $i < 14; $i++) {
-            $date = now()->addDays($i);
-            $dateStr = $date->format('Y-m-d');
-            
-            $workloadByDay[$date->format('M d')] = $tasks->filter(function ($task) use ($dateStr) {
-                return $task->due_date->format('Y-m-d') === $dateStr;
-            })->count();
-        }
+        $data = [
+            'labels' => $projects->pluck('title'),
+            'datasets' => [[
+                'label' => 'Tareas asignadas',
+                'data' => $projects->pluck('tasks_count'),
+                'backgroundColor' => [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF',
+                    '#FF9F40'
+                ],
+                'borderWidth' => 1
+            ]]
+        ];
         
-        return response()->json([
-            'labels' => array_keys($workloadByDay),
-            'datasets' => [
-                [
-                    'label' => 'Tareas por vencer',
-                    'data' => array_values($workloadByDay),
-                    'backgroundColor' => '#e74a3b',
-                    'borderColor' => '#e74a3b',
-                    'borderWidth' => 2
-                ]
-            ]
-        ]);
+        return response()->json($data);
     }
 
     /**
-     * Calcular puntaje de productividad
+     * Calcular puntuación de productividad
      */
     private function calculateProductivityScore($user)
     {
-        $lastWeek = now()->subWeek();
-        
-        $tasksCompleted = $user->assignedTasks()
-            ->where('status', 'done')
-            ->where('updated_at', '>=', $lastWeek)
+        $totalTasks = $user->assignedTasks()->count();
+        $completedTasks = $user->assignedTasks()->where('status', 'done')->count();
+        $overdueTasks = $user->assignedTasks()
+            ->where('due_date', '<', now())
+            ->where('status', '!=', 'done')
             ->count();
-            
-        $tasksOnTime = $user->assignedTasks()
-            ->where('status', 'done')
-            ->where('updated_at', '>=', $lastWeek)
-            ->whereColumn('updated_at', '<=', 'due_date')
-            ->count();
-            
-        $score = 0;
-        if ($tasksCompleted > 0) {
-            $score = round(($tasksOnTime / $tasksCompleted) * 100);
-        }
         
-        return $score;
+        if ($totalTasks == 0) return 0;
+        
+        $baseScore = ($completedTasks / $totalTasks) * 100;
+        $penalty = ($overdueTasks / $totalTasks) * 20;
+        
+        return max(0, round($baseScore - $penalty));
     }
 
     /**
-     * Calcular días de racha
+     * Calcular racha de días
      */
     private function calculateStreak($user)
     {
         $streak = 0;
-        $date = now()->startOfDay();
+        $date = Carbon::now();
         
         while (true) {
-            $hasActivity = Task::where('assigned_to', $user->id)
+            $hasActivity = $user->assignedTasks()
+                ->whereDate('updated_at', $date->toDateString())
                 ->where('status', 'done')
-                ->whereDate('updated_at', $date)
                 ->exists();
                 
-            if (!$hasActivity) {
-                break;
-            }
+            if (!$hasActivity) break;
             
             $streak++;
             $date->subDay();
