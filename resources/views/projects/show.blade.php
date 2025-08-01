@@ -548,24 +548,81 @@
 
         <!-- Members Tab -->
         <div class="tab-pane fade" id="members">
-            <div class="row">
-                @foreach($project->members as $member)
-                    <div class="col-md-6 col-lg-4">
-                        <div class="member-card">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($member->name) }}&background=4e73df&color=fff" 
-                                 alt="{{ $member->name }}" 
-                                 class="member-avatar">
-                            <div class="member-info">
-                                <h6>{{ $member->name }}</h6>
-                                <span class="member-role">
-                                    <i class="fas fa-user-tag me-1"></i>
-                                    {{ ucfirst($member->pivot->role) }}
-                                </span>
+    <div class="project-members-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+                <i class="fas fa-users text-primary"></i>
+                Miembros del Equipo ({{ $project->members->count() }})
+            </h5>
+            
+            @if($project->creator_id === Auth::id() || 
+                ($project->members->where('id', Auth::id())->first() && 
+                 $project->members->where('id', Auth::id())->first()->pivot->role === 'coordinator'))
+                <a href="{{ route('projects.members', $project) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-user-cog"></i> Gestionar Miembros
+                </a>
+            @endif
+        </div>
+        
+        <div class="members-grid">
+            @foreach($project->members as $member)
+                <div class="member-card">
+                    <div class="member-avatar">
+                        @if($member->avatar)
+                            <img src="{{ asset('storage/' . $member->avatar) }}" alt="{{ $member->name }}" class="avatar-img">
+                        @else
+                            <div class="avatar-placeholder">
+                                {{ strtoupper(substr($member->name, 0, 1)) }}
                             </div>
+                        @endif
+                    </div>
+                    
+                    <div class="member-info">
+                        <div class="member-name">{{ $member->name }}</div>
+                        <div class="member-email">{{ $member->email }}</div>
+                        <div class="member-role">
+                            @if($member->pivot->role === 'coordinator')
+                                <span class="role-badge coordinator">
+                                    <i class="fas fa-crown"></i> Coordinador
+                                </span>
+                            @else
+                                <span class="role-badge member">
+                                    <i class="fas fa-user"></i> Miembro
+                                </span>
+                            @endif
+                            
+                            @if($member->id === $project->creator_id)
+                                <span class="role-badge creator">
+                                    <i class="fas fa-star"></i> Creador
+                                </span>
+                            @endif
+                        </div>
+                        <div class="member-joined">
+                            Se unió: {{ Carbon\Carbon::parse($member->pivot->joined_at)->format('d/m/Y') }}
                         </div>
                     </div>
-                @endforeach
-            </div>
+                    
+                    @if($member->id === Auth::id())
+                        <div class="member-badge-self">
+                            <span class="badge bg-success">Tú</span>
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+            
+            @if($project->members->count() === 0)
+                <div class="no-members-message">
+                    <i class="fas fa-user-plus text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No hay miembros adicionales en este proyecto</p>
+                    @if($project->creator_id === Auth::id())
+                        <a href="{{ route('projects.members', $project) }}" class="btn btn-primary btn-sm mt-2">
+                            <i class="fas fa-plus"></i> Agregar Miembros
+                        </a>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </div>
         </div>
 
         <!-- Files Tab -->

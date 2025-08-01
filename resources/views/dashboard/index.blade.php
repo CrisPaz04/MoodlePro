@@ -341,8 +341,8 @@
                         <p class="stats-label">Tareas Pendientes</p>
                         <h4>{{ $stats['todo_tasks'] + $stats['in_progress_tasks'] }}</h4>
                         <div class="d-flex gap-2 mt-2">
-                            <small class="text-info">{{ $stats['todo_tasks'] }} por hacer</small>
-                            <small class="text-warning">{{ $stats['in_progress_tasks'] }} en progreso</small>
+                            <small class="text-warning">{{ $stats['todo_tasks'] }} por hacer</small>
+                            <small class="text-info">{{ $stats['in_progress_tasks'] }} en progreso</small>
                         </div>
                     </div>
                 </div>
