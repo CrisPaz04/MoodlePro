@@ -4,71 +4,53 @@
 
 @push('styles')
 <style>
+    /* Chat Container */
     .chat-container {
+        height: calc(100vh - 200px);
         display: flex;
-        height: calc(100vh - 80px);
-        background: #f8f9fc;
+        background: #f8f9fa;
     }
 
     /* Sidebar */
     .chat-sidebar {
-        width: 320px;
+        width: 280px;
         background: white;
         border-right: 1px solid #e3e6f0;
         display: flex;
         flex-direction: column;
     }
 
-    .project-header {
+    .sidebar-header {
         padding: 1.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        border-bottom: 1px solid #e3e6f0;
     }
 
-    .project-header h3 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
+    .project-info h5 {
+        margin: 0;
+        color: #2e3440;
+        font-size: 1.1rem;
     }
 
-    .project-meta {
-        display: flex;
-        gap: 1rem;
+    .project-info p {
+        margin: 0.5rem 0 0;
+        color: #858796;
         font-size: 0.875rem;
-        opacity: 0.9;
     }
 
-    .project-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .members-section {
+    .members-list {
         flex: 1;
         overflow-y: auto;
         padding: 1rem;
     }
 
-    .section-title {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: #858796;
-        text-transform: uppercase;
-        margin-bottom: 1rem;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #e3e6f0;
-    }
-
     .member-item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
         padding: 0.75rem;
         border-radius: 0.5rem;
-        cursor: pointer;
-        transition: all 0.3s;
         margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: background 0.2s;
     }
 
     .member-item:hover {
@@ -83,24 +65,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        margin-right: 1rem;
         font-weight: 600;
         color: #5a5c69;
         position: relative;
-    }
-
-    .member-info {
-        flex: 1;
-    }
-
-    .member-name {
-        font-weight: 600;
-        color: #2e3440;
-        margin-bottom: 0.125rem;
-    }
-
-    .member-status {
-        font-size: 0.75rem;
-        color: #858796;
     }
 
     .online-indicator {
@@ -228,7 +196,7 @@
 
     .date-separator span {
         background: white;
-        padding: 0.5rem 1rem;
+        padding: 0 1rem;
         color: #858796;
         font-size: 0.875rem;
         position: relative;
@@ -245,28 +213,114 @@
         background: #e3e6f0;
     }
 
+    /* Empty State */
+    .empty-chat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #858796;
+    }
+
+    .empty-chat i {
+        font-size: 4rem;
+        color: #d1d3e2;
+        margin-bottom: 1rem;
+    }
+
+    /* Message Input */
+    .message-input-container {
+        padding: 1.5rem;
+        background: white;
+        border-top: 1px solid #e3e6f0;
+    }
+
+    .message-input-wrapper {
+        position: relative;
+    }
+
+    .input-group {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.5rem;
+    }
+
+    .message-input {
+        flex: 1;
+        border: 1px solid #e3e6f0;
+        border-radius: 1.5rem;
+        padding: 0.75rem 1.25rem;
+        resize: none;
+        outline: none;
+        font-size: 0.95rem;
+        min-height: 44px;
+        max-height: 120px;
+    }
+
+    .message-input:focus {
+        border-color: #4e73df;
+    }
+
+    .input-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .input-btn {
+        padding: 0.5rem 0.75rem;
+        background: none;
+        border: none;
+        color: #858796;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-radius: 50%;
+    }
+
+    .input-btn:hover {
+        background: #f8f9fc;
+        color: #4e73df;
+    }
+
+    .send-btn {
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        border-radius: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+
+    .send-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .send-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
     /* Typing Indicator */
     .typing-indicator {
         display: none;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 1rem;
+        padding: 0 2rem 1rem;
         color: #858796;
         font-size: 0.875rem;
-    }
-
-    .typing-indicator.show {
-        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .typing-dots {
         display: flex;
-        gap: 0.25rem;
+        gap: 3px;
     }
 
     .dot {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         background: #858796;
         border-radius: 50%;
         animation: typing 1.4s infinite;
@@ -280,100 +334,17 @@
         animation-delay: 0.4s;
     }
 
-    /* Message Input */
-    .message-input-container {
-        padding: 1.5rem;
-        background: white;
-        border-top: 1px solid #e3e6f0;
+    @keyframes typing {
+        0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.4;
+        }
+        30% {
+            transform: translateY(-10px);
+            opacity: 1;
+        }
     }
 
-    .message-input-wrapper {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-end;
-    }
-
-    .input-group {
-        flex: 1;
-        background: #f8f9fc;
-        border-radius: 1.5rem;
-        padding: 0.75rem 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .message-input {
-        flex: 1;
-        background: none;
-        border: none;
-        outline: none;
-        resize: none;
-        font-family: inherit;
-        max-height: 100px;
-    }
-
-    .input-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .input-btn {
-        background: none;
-        border: none;
-        color: #858796;
-        cursor: pointer;
-        padding: 0.5rem;
-        transition: all 0.3s;
-    }
-
-    .input-btn:hover {
-        color: #4e73df;
-    }
-
-    .send-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 2rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .send-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-
-    .send-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    /* Empty State */
-    .empty-chat {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #858796;
-        text-align: center;
-        padding: 2rem;
-    }
-
-    .empty-chat i {
-        font-size: 5rem;
-        color: #d1d3e2;
-        margin-bottom: 2rem;
-    }
-
-    /* Animations */
     @keyframes fadeIn {
         from {
             opacity: 0;
@@ -385,21 +356,12 @@
         }
     }
 
-    @keyframes typing {
-        0%, 60%, 100% {
-            transform: translateY(0);
-        }
-        30% {
-            transform: translateY(-10px);
-        }
-    }
-
-    /* Mobile */
+    /* Responsive */
     @media (max-width: 768px) {
         .chat-sidebar {
             display: none;
         }
-
+        
         .message {
             max-width: 85%;
         }
@@ -408,127 +370,125 @@
 @endpush
 
 @section('content')
-<div class="chat-container">
-    <!-- Sidebar -->
-    <div class="chat-sidebar">
-        <div class="project-header">
-            <h3>{{ $project->title }}</h3>
-            <div class="project-meta">
-                <div class="project-meta-item">
-                    <i class="fas fa-users"></i>
-                    {{ $project->members->count() }} miembros
+<div class="container-fluid p-0">
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <div class="project-info">
+                    <h5>{{ $project->title }}</h5>
+                    <p>{{ $project->members->count() }} miembros</p>
                 </div>
-                <div class="project-meta-item">
-                    <i class="fas fa-tasks"></i>
-                    {{ $project->tasks->count() }} tareas
-                </div>
+                <a href="{{ route('projects.show', $project) }}" class="btn btn-sm btn-outline-secondary mt-3">
+                    <i class="fas fa-arrow-left me-1"></i>Volver al proyecto
+                </a>
             </div>
-        </div>
-
-        <div class="members-section">
-            <h4 class="section-title">Miembros del Equipo</h4>
-            @foreach($project->members as $member)
-                <div class="member-item" data-member-id="{{ $member->id }}">
-                    <div class="member-avatar">
-                        {{ strtoupper(substr($member->name, 0, 1)) }}
-                        @if($member->isOnline ?? false)
-                            <span class="online-indicator"></span>
-                        @endif
-                    </div>
-                    <div class="member-info">
-                        <div class="member-name">{{ $member->name }}</div>
-                        <div class="member-status">
-                            {{ $member->pivot->role == 'coordinator' ? 'Coordinador' : 'Miembro' }}
+            
+            <div class="members-list">
+                <h6 class="text-uppercase text-muted small mb-3">Miembros</h6>
+                @foreach($project->members as $member)
+                    <div class="member-item">
+                        <div class="member-avatar">
+                            {{ strtoupper(substr($member->name, 0, 1)) }}
+                            @if(false)
+                                <span class="online-indicator"></span>
+                            @endif
                         </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-
-    <!-- Chat Area -->
-    <div class="chat-area">
-        <div class="chat-header">
-            <h2 class="chat-title">Chat del Proyecto</h2>
-            <div class="chat-actions">
-                <button class="action-btn" onclick="searchMessages()">
-                    <i class="fas fa-search"></i>
-                </button>
-                <button class="action-btn" onclick="toggleInfo()">
-                    <i class="fas fa-info-circle"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="messages-container" id="messagesContainer">
-            @if($messages->count() > 0)
-                @php $lastDate = null; @endphp
-                
-                @foreach($messages as $message)
-                    @if(!$lastDate || $message->created_at->format('Y-m-d') != $lastDate)
-                        <div class="date-separator">
-                            <span>{{ $message->created_at->format('d M Y') }}</span>
-                        </div>
-                        @php $lastDate = $message->created_at->format('Y-m-d'); @endphp
-                    @endif
-                    
-                    <div class="message {{ $message->user_id == auth()->id() ? 'own' : '' }}" data-message-id="{{ $message->id }}">
-                        <div class="message-avatar">
-                            {{ strtoupper(substr($message->user->name, 0, 1)) }}
-                        </div>
-                        <div class="message-content">
-                            <div class="message-text">{{ $message->content }}</div>
-                            <div class="message-time">
-                                {{ $message->user->name }} • {{ $message->created_at->format('g:i A') }}
+                        <div class="member-info">
+                            <div class="member-name">{{ $member->name }}</div>
+                            <div class="member-status">
+                                {{ $member->pivot->role == 'coordinator' ? 'Coordinador' : 'Miembro' }}
                             </div>
                         </div>
                     </div>
                 @endforeach
-            @else
-                <div class="empty-chat">
-                    <i class="fas fa-comments"></i>
-                    <h3>No hay mensajes aún</h3>
-                    <p>Sé el primero en iniciar la conversación</p>
-                </div>
-            @endif
-        </div>
-
-        <div class="typing-indicator" id="typingIndicator">
-            <div class="typing-dots">
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
             </div>
-            <span>Alguien está escribiendo...</span>
         </div>
 
-        <div class="message-input-container">
-            <form id="messageForm" onsubmit="sendMessage(event)">
-                <div class="message-input-wrapper">
-                    <div class="input-group">
-                        <textarea 
-                            class="message-input" 
-                            id="messageInput"
-                            placeholder="Escribe un mensaje..."
-                            rows="1"
-                            maxlength="500"
-                            onkeypress="handleKeyPress(event)"
-                            oninput="autoResize(this)"></textarea>
-                        <div class="input-actions">
-                            <button type="button" class="input-btn" onclick="attachFile()">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                            <button type="button" class="input-btn" onclick="insertEmoji()">
-                                <i class="fas fa-smile"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="submit" class="send-btn" id="sendBtn">
-                        <i class="fas fa-paper-plane"></i>
-                        Enviar
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <h2 class="chat-title">Chat del Proyecto</h2>
+                <div class="chat-actions">
+                    <button class="action-btn" onclick="searchMessages()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="action-btn" onclick="toggleInfo()">
+                        <i class="fas fa-info-circle"></i>
                     </button>
                 </div>
-            </form>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                @if($messages->count() > 0)
+                    @php $lastDate = null; @endphp
+                    
+                    @foreach($messages as $message)
+                        @if(!$lastDate || $message->created_at->format('Y-m-d') != $lastDate)
+                            <div class="date-separator">
+                                <span>{{ $message->created_at->format('d M Y') }}</span>
+                            </div>
+                            @php $lastDate = $message->created_at->format('Y-m-d'); @endphp
+                        @endif
+                        
+                        <div class="message {{ $message->user_id == auth()->id() ? 'own' : '' }}" data-message-id="{{ $message->id }}">
+                            <div class="message-avatar">
+                                {{ strtoupper(substr($message->user->name, 0, 1)) }}
+                            </div>
+                            <div class="message-content">
+                                <div class="message-text">{{ $message->content }}</div>
+                                <div class="message-time">
+                                    {{ $message->user->name }} • {{ $message->created_at->format('g:i A') }}
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                @else
+                    <div class="empty-chat">
+                        <i class="fas fa-comments"></i>
+                        <h3>No hay mensajes aún</h3>
+                        <p>Sé el primero en iniciar la conversación</p>
+                    </div>
+                @endif
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+                <span>Alguien está escribiendo...</span>
+            </div>
+
+            <div class="message-input-container">
+                <form id="messageForm" onsubmit="sendMessage(event)">
+                    <div class="message-input-wrapper">
+                        <div class="input-group">
+                            <textarea 
+                                class="message-input" 
+                                id="messageInput"
+                                placeholder="Escribe un mensaje..."
+                                rows="1"
+                                maxlength="500"
+                                onkeypress="handleKeyPress(event)"
+                                oninput="autoResize(this)"></textarea>
+                            
+                            <div class="input-actions">
+                                <button type="button" class="input-btn" onclick="attachFile()">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <button type="button" class="input-btn" onclick="insertEmoji()">
+                                    <i class="fas fa-smile"></i>
+                                </button>
+                                <button type="submit" class="send-btn" id="sendBtn">
+                                    <i class="fas fa-paper-plane me-1"></i>Enviar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -536,13 +496,16 @@
 
 @push('scripts')
 <script>
+// Store CSRF token
+const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
 // Auto-resize textarea
-function autoResize(element) {
-    element.style.height = 'auto';
-    element.style.height = element.scrollHeight + 'px';
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
 }
 
-// Handle enter key
+// Handle Enter key
 function handleKeyPress(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
@@ -562,15 +525,18 @@ function sendMessage(event) {
     // Disable send button
     document.getElementById('sendBtn').disabled = true;
     
+    // Create temporary message ID
+    const tempId = 'temp_' + Date.now();
+    
     // Add message to UI immediately
     addMessageToUI({
-        id: Date.now(),
+        id: tempId,
         content: message,
         user: {
-            id: {{ auth()->id() }},
-            name: '{{ auth()->user()->name }}'
+            id: {{ Auth::id() }},
+            name: '{{ Auth::user()->name }}'
         },
-        created_at: new Date()
+        created_at: new Date().toISOString()
     }, true);
     
     // Clear input
@@ -582,22 +548,42 @@ function sendMessage(event) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
         },
         body: JSON.stringify({
             project_id: {{ $project->id }},
             content: message
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         // Enable send button
         document.getElementById('sendBtn').disabled = false;
+        
+        if (data.success) {
+            // Update temp message with real ID
+            const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+            if (tempMessage) {
+                tempMessage.dataset.messageId = data.message.id;
+            }
+        }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Error al enviar el mensaje');
         document.getElementById('sendBtn').disabled = false;
+        
+        // Remove temp message on error
+        const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+        if (tempMessage) {
+            tempMessage.remove();
+        }
     });
 }
 
@@ -633,7 +619,7 @@ function addMessageToUI(message, isOwn = false) {
             ${message.user.name.charAt(0).toUpperCase()}
         </div>
         <div class="message-content">
-            <div class="message-text">${message.content}</div>
+            <div class="message-text">${escapeHtml(message.content)}</div>
             <div class="message-time">
                 ${message.user.name} • ${new Date(message.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
             </div>
@@ -646,27 +632,35 @@ function addMessageToUI(message, isOwn = false) {
     container.scrollTop = container.scrollHeight;
 }
 
+// Escape HTML
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
 // Search messages
 function searchMessages() {
-    // Implementar búsqueda
     alert('Búsqueda de mensajes en desarrollo');
 }
 
 // Toggle info
 function toggleInfo() {
-    // Implementar panel de información
     alert('Panel de información en desarrollo');
 }
 
 // Attach file
 function attachFile() {
-    // Implementar adjuntar archivos
     alert('Adjuntar archivos en desarrollo');
 }
 
 // Insert emoji
 function insertEmoji() {
-    // Implementar selector de emojis
     alert('Selector de emojis en desarrollo');
 }
 
@@ -674,19 +668,29 @@ function insertEmoji() {
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('messagesContainer');
     container.scrollTop = container.scrollHeight;
+    
+    // Focus input
+    document.getElementById('messageInput').focus();
 });
 
-// Simulate typing indicator (remove in production)
-let typingTimer;
-document.getElementById('messageInput').addEventListener('input', function() {
-    clearTimeout(typingTimer);
-    
-    if (this.value.trim()) {
-        // Show typing indicator after delay
-        typingTimer = setTimeout(() => {
-            // Send typing status to server
-        }, 500);
-    }
-});
+// Poll for new messages (temporary until WebSockets)
+let lastMessageId = {{ $messages->last()->id ?? 0 }};
+
+setInterval(function() {
+    fetch(`{{ route('messages.new', $project) }}?last_message_id=${lastMessageId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(message => {
+                    // Only add if not from current user
+                    if (message.user.id !== {{ Auth::id() }}) {
+                        addMessageToUI(message, false);
+                    }
+                    lastMessageId = Math.max(lastMessageId, message.id);
+                });
+            }
+        })
+        .catch(error => console.error('Error fetching messages:', error));
+}, 3000); // Check every 3 seconds
 </script>
 @endpush

@@ -511,6 +511,11 @@
             </a>
         </li>
         <li class="nav-item">
+    <a class="nav-link" href="{{ route('projects.chat', $project) }}">
+        <i class="fas fa-comments me-2"></i>Chat
+    </a>
+</li>
+        <li class="nav-item">
             <a class="nav-link" data-bs-toggle="tab" href="#files">
                 <i class="fas fa-folder me-2"></i>Archivos
             </a>
