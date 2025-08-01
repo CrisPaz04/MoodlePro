@@ -137,6 +137,15 @@
         transform: rotate(5deg);
     }
 
+    .task-content {
+        cursor: pointer;
+    }
+
+    .task-content:hover .task-title {
+        color: #4e73df;
+        text-decoration: underline;
+    }
+
     .task-actions {
         position: absolute;
         top: 0.5rem;
@@ -402,7 +411,7 @@
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
-                                <div class="task-content">
+                                <div class="task-content" onclick="viewTask({{ $task->id }})">
                                     <h6 class="task-title">{{ $task->title }}</h6>
                                     @if($task->description)
                                         <p class="text-muted small mb-2">{{ Str::limit($task->description, 100) }}</p>
@@ -448,7 +457,15 @@
                         @foreach($project->tasks->where('status', 'in_progress')->sortBy('order') as $task)
                             <div class="task-card" draggable="true" data-task-id="{{ $task->id }}">
                                 <div class="task-priority priority-{{ $task->priority }}"></div>
-                                <div class="task-content">
+                                <div class="task-actions">
+                                    <button onclick="editTask({{ $task->id }})" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteTask({{ $task->id }})" class="delete-btn" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="task-content" onclick="viewTask({{ $task->id }})">
                                     <h6 class="task-title">{{ $task->title }}</h6>
                                     @if($task->description)
                                         <p class="text-muted small mb-2">{{ Str::limit($task->description, 100) }}</p>
@@ -813,13 +830,20 @@ function updateTaskCounts() {
     });
 }
 
+// Función para ver tarea individual
+function viewTask(taskId) {
+    window.location.href = `/tasks/${taskId}`;
+}
+
 // Función para editar tarea
 function editTask(taskId) {
+    event.stopPropagation(); // Evitar que se active el click del contenedor
     window.location.href = `/tasks/${taskId}/edit`;
 }
 
 // Función para eliminar tarea
 function deleteTask(taskId) {
+    event.stopPropagation(); // Evitar que se active el click del contenedor
     if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
         const form = document.createElement('form');
         form.method = 'POST';
