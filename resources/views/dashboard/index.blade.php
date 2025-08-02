@@ -5,6 +5,23 @@
 @push('styles')
 <style>
     /* Dashboard Specific Styles */
+    .task-item-link {
+    display: block;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.task-item-link:hover {
+    background-color: #f8f9fc;
+}
+
+.task-item-link:hover .task-title {
+    color: #4e73df;
+}
+
+.task-item {
+    cursor: pointer;
+}
     .stats-card {
         border: none;
         border-radius: 0.5rem;
@@ -461,31 +478,33 @@
                 <h5 class="m-0 font-weight-bold text-primary">Próximos Vencimientos</h5>
             </div>
             <div class="card-body p-0">
-                @forelse($upcomingDeadlines as $task)
-                    <div class="task-item position-relative">
-                        <div class="task-priority priority-{{ $task->priority }}"></div>
-                        <div class="ps-3">
-                            <div class="task-title">{{ $task->title }}</div>
-                            <div class="task-project">{{ $task->project->title }}</div>
-                            <div class="task-due {{ $task->due_date->isPast() ? 'task-overdue' : '' }}">
-                                <i class="fas fa-clock"></i>
-                                @if($task->due_date->isToday())
-                                    Hoy
-                                @elseif($task->due_date->isTomorrow())
-                                    Mañana
-                                @else
-                                    {{ $task->due_date->diffForHumans() }}
-                                @endif
-                            </div>
-                        </div>
+    @forelse($upcomingDeadlines as $task)
+        <a href="{{ route('tasks.show', $task) }}" class="task-item-link text-decoration-none">
+            <div class="task-item position-relative">
+                <div class="task-priority priority-{{ $task->priority }}"></div>
+                <div class="ps-3">
+                    <div class="task-title">{{ $task->title }}</div>
+                    <div class="task-project">{{ $task->project->title }}</div>
+                    <div class="task-due {{ $task->due_date->isPast() ? 'task-overdue' : '' }}">
+                        <i class="fas fa-clock"></i>
+                        @if($task->due_date->isToday())
+                            Hoy
+                        @elseif($task->due_date->isTomorrow())
+                            Mañana
+                        @else
+                            {{ $task->due_date->diffForHumans() }}
+                        @endif
                     </div>
-                @empty
-                    <div class="empty-state">
-                        <i class="fas fa-calendar-check"></i>
-                        <p>No hay tareas próximas a vencer</p>
-                    </div>
-                @endforelse
+                </div>
             </div>
+        </a>
+    @empty
+        <div class="empty-state">
+            <i class="fas fa-calendar-check"></i>
+            <p>No hay tareas próximas a vencer</p>
+        </div>
+    @endforelse
+</div>
         </div>
 
         <!-- Recent Activity -->
