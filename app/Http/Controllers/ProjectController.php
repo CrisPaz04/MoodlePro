@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +53,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * Guardar nuevo proyecto
+     * Guardar nuevo proyecto - CORREGIDO PARA PROCESAR MIEMBROS
      */
     public function store(Request $request)
     {
@@ -87,31 +88,73 @@ class ProjectController extends Controller
             if ($request->filled('members')) {
                 $membersEmails = json_decode($request->members, true);
                 
-                foreach ($membersEmails as $email) {
-                    $user = User::where('email', $email)->first();
-                    if ($user && !$project->members->contains($user->id)) {
-                        $project->members()->attach($user->id, [
-                            'role' => 'member',
-                            'joined_at' => now()
-                        ]);
+                if (is_array($membersEmails) && !empty($membersEmails)) {
+                    $addedMembers = [];
+                    $notFoundEmails = [];
+                    
+                    foreach ($membersEmails as $email) {
+                        // Buscar usuario por email
+                        $user = User::where('email', $email)->first();
+                        
+                        if ($user) {
+                            // Verificar que no sea el creador (ya está agregado)
+                            if ($user->id !== Auth::id()) {
+                                // Verificar que no esté ya agregado
+                                if (!$project->members()->where('user_id', $user->id)->exists()) {
+                                    $project->members()->attach($user->id, [
+                                        'role' => 'member',
+                                        'joined_at' => now()
+                                    ]);
+                                    $addedMembers[] = $user->name . ' (' . $user->email . ')';
+                                    
+                                    // Crear notificación para el nuevo miembro
+                                    if (class_exists('\App\Models\Notification')) {
+                                        Notification::memberAddedToProject($user, $project, Auth::user());
+                                    }
+                                }
+                            }
+                        } else {
+                            $notFoundEmails[] = $email;
+                        }
+                    }
+                    
+                    // Log para debugging
+                    if (!empty($addedMembers)) {
+                        Log::info("Miembros agregados al proyecto {$project->title}:", $addedMembers);
+                    }
+                    
+                    if (!empty($notFoundEmails)) {
+                        Log::warning("Emails no encontrados al crear proyecto {$project->title}:", $notFoundEmails);
                     }
                 }
             }
 
             DB::commit();
-
-            return redirect()
-                ->route('projects.show', $project)
-                ->with('success', 'Proyecto creado exitosamente');
-
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Error creating project: ' . $e->getMessage());
             
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Hubo un error al crear el proyecto');
+            // Mensaje de éxito con información detallada
+            $successMessage = 'Proyecto creado exitosamente';
+            if ($request->filled('members')) {
+                $membersCount = $project->members()->where('user_id', '!=', Auth::id())->count();
+                if ($membersCount > 0) {
+                    $successMessage .= " con {$membersCount} miembro(s) agregado(s)";
+                }
+            }
+
+            return redirect()->route('projects.show', $project)
+                            ->with('success', $successMessage);
+                            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Error al crear proyecto: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'request_data' => $request->except(['_token']),
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()
+                           ->withInput()
+                           ->with('error', 'Error al crear el proyecto. Por favor intenta nuevamente.');
         }
     }
 
@@ -218,33 +261,50 @@ class ProjectController extends Controller
     }
 
     /**
-     * Mostrar miembros del proyecto
+     * Mostrar miembros del proyecto - CORREGIDO
      */
     public function members(Project $project)
     {
-        // Verificar acceso
+        // Verificar que el usuario tenga acceso al proyecto
         if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
             abort(403, 'No tienes acceso a este proyecto');
         }
 
+        // Solo coordinadores pueden gestionar miembros
+        $userRole = $project->members()
+            ->where('user_id', Auth::id())
+            ->first()
+            ->pivot
+            ->role ?? null;
+            
+        if ($project->creator_id !== Auth::id() && $userRole !== 'coordinator') {
+            abort(403, 'No tienes permisos para gestionar miembros');
+        }
+
+        // CORREGIDO: Cargar miembros con pivot data
         $project->load(['members', 'creator']);
+        $members = $project->members()->withPivot('role', 'joined_at')->get();
         
         // Usuarios disponibles para agregar (que no estén ya en el proyecto)
-        $availableUsers = User::whereNotIn('id', $project->members->pluck('id'))
-                             ->where('id', '!=', $project->creator_id)
+        $availableUsers = User::whereNotIn('id', $members->pluck('id'))
                              ->orderBy('name')
                              ->get();
 
-        return view('projects.members', compact('project', 'availableUsers'));
+        return view('projects.members', compact('project', 'members', 'availableUsers'));
     }
 
     /**
-     * Agregar miembro al proyecto
+     * Agregar miembro al proyecto - MEJORADO CON NOTIFICACIONES
      */
     public function addMember(Request $request, Project $project)
     {
         // Solo coordinadores pueden agregar miembros
-        $userRole = $project->members->firstWhere('id', Auth::id())->pivot->role ?? null;
+        $userRole = $project->members()
+            ->where('user_id', Auth::id())
+            ->first()
+            ->pivot
+            ->role ?? null;
+            
         if ($project->creator_id !== Auth::id() && $userRole !== 'coordinator') {
             abort(403, 'No tienes permisos para agregar miembros');
         }
@@ -254,31 +314,72 @@ class ProjectController extends Controller
             'role' => 'required|in:member,coordinator',
         ]);
 
+        DB::beginTransaction();
+        
         try {
             // Verificar que el usuario no esté ya en el proyecto
-            if ($project->members->contains($request->user_id)) {
-                return redirect()
-                    ->back()
-                    ->with('error', 'El usuario ya es miembro de este proyecto');
+            if ($project->members()->where('user_id', $request->user_id)->exists()) {
+                return back()->with('error', 'El usuario ya es miembro del proyecto');
             }
 
+            // Agregar miembro al proyecto
             $project->members()->attach($request->user_id, [
                 'role' => $request->role,
                 'joined_at' => now()
             ]);
 
-            $user = User::find($request->user_id);
+            // Obtener el usuario agregado
+            $newMember = User::findOrFail($request->user_id);
+            
+            // Crear notificación para el nuevo miembro
+            if (class_exists('\App\Models\Notification')) {
+                Notification::memberAddedToProject($newMember, $project, Auth::user());
+                
+                // Notificar a otros coordinadores sobre el nuevo miembro
+                $coordinators = $project->members()
+                    ->where('project_members.role', 'coordinator')
+                    ->where('users.id', '!=', Auth::id()) // Excepto quien agregó
+                    ->where('users.id', '!=', $request->user_id) // Excepto el nuevo miembro
+                    ->get();
+                    
+                foreach ($coordinators as $coordinator) {
+                    Notification::create([
+                        'user_id' => $coordinator->id,
+                        'type' => 'member_added_notification',
+                        'title' => 'Nuevo miembro agregado',
+                        'message' => ':added_by agregó a :new_member al proyecto :project_title',
+                        'data' => [
+                            'project_title' => $project->title,
+                            'project_id' => $project->id,
+                            'added_by' => Auth::user()->name,
+                            'new_member' => $newMember->name,
+                            'new_member_role' => $request->role === 'coordinator' ? 'coordinador' : 'miembro',
+                        ],
+                        'related_type' => Project::class,
+                        'related_id' => $project->id,
+                        'action_url' => route('projects.members', $project->id),
+                    ]);
+                }
+            }
 
-            return redirect()
-                ->back()
-                ->with('success', "Se agregó a {$user->name} como {$request->role}");
+            DB::commit();
+
+            $successMessage = "Miembro {$newMember->name} agregado exitosamente como " . 
+                            ($request->role === 'coordinator' ? 'coordinador' : 'miembro');
+
+            return back()->with('success', $successMessage);
 
         } catch (\Exception $e) {
-            Log::error('Error adding member: ' . $e->getMessage());
+            DB::rollBack();
             
-            return redirect()
-                ->back()
-                ->with('error', 'Hubo un error al agregar el miembro');
+            Log::error('Error al agregar miembro al proyecto: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'project_id' => $project->id,
+                'new_member_id' => $request->user_id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Error al agregar el miembro. Por favor intenta nuevamente.');
         }
     }
 
@@ -288,7 +389,12 @@ class ProjectController extends Controller
     public function removeMember(Project $project, User $user)
     {
         // Solo coordinadores pueden remover miembros
-        $userRole = $project->members->firstWhere('id', Auth::id())->pivot->role ?? null;
+        $userRole = $project->members()
+            ->where('user_id', Auth::id())
+            ->first()
+            ->pivot
+            ->role ?? null;
+            
         if ($project->creator_id !== Auth::id() && $userRole !== 'coordinator') {
             abort(403, 'No tienes permisos para remover miembros');
         }
@@ -301,6 +407,11 @@ class ProjectController extends Controller
         }
 
         try {
+            // Reasignar tareas del usuario removido
+            $project->tasks()
+                ->where('assigned_to', $user->id)
+                ->update(['assigned_to' => null]);
+
             $project->members()->detach($user->id);
 
             return redirect()
