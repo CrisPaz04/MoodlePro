@@ -347,7 +347,7 @@
         <aside class="sidebar" id="sidebar">
             <a href="{{ route('dashboard') }}" class="sidebar-brand">
                 <i class="fas fa-graduation-cap sidebar-brand-icon"></i>
-                <span class="sidebar-brand-text">MoodlePro</span>
+                <span class="sidebar-brand-text">PlanningPro</span>
             </a>
 
             <nav class="nav flex-column">
