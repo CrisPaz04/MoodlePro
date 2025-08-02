@@ -125,7 +125,7 @@ public function store(Request $request)
             'description' => $validatedData['description'],
             'priority' => $validatedData['priority'],
             'status' => $validatedData['status'] ?? 'todo',
-            'creator_id' => Auth::id(), // CORREGIDO: usando creator_id
+            'created_by' => Auth::id(),
             'assigned_to' => $validatedData['assigned_to'] ?? Auth::id(),
             'due_date' => $validatedData['due_date'],
             'order' => Task::where('project_id', $validatedData['project_id'])->max('order') + 1,
