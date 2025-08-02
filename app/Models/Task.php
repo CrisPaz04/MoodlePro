@@ -17,7 +17,7 @@ class Task extends Model
         'status',
         'priority',
         'assigned_to',
-        'created_by',
+        'creator_id',  // CORREGIDO: cambié de 'created_by' a 'creator_id'
         'due_date',
         'order'
     ];
@@ -38,10 +38,10 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
-    // Una tarea fue creada por un usuario
+    // Una tarea fue creada por un usuario (CORREGIDO: usando 'creator_id')
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'creator_id');
     }
 
     // Scopes para filtrar tareas

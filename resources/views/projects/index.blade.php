@@ -135,11 +135,12 @@
         transition: all 0.3s;
         overflow: hidden;
         position: relative;
+        cursor: pointer;
     }
 
     .project-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.15);
+        transform: translateY(-8px);
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
     }
 
     .project-status-indicator {
@@ -154,6 +155,7 @@
     .status-active { background: #1cc88a; }
     .status-completed { background: #4e73df; }
     .status-cancelled { background: #e74a3b; }
+    .status-paused { background: #858796; }
 
     .project-header {
         padding: 1.5rem;
@@ -198,48 +200,67 @@
         min-height: 3.5rem;
     }
 
-    .project-progress {
+    /* Progress Section */
+    .progress-section {
         margin-bottom: 1rem;
     }
 
-    .progress-label {
+    .progress-info {
         display: flex;
         justify-content: space-between;
-        font-size: 0.875rem;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 600;
         color: #5a5c69;
         margin-bottom: 0.5rem;
     }
 
-    .progress {
-        height: 8px;
-        border-radius: 4px;
-        background-color: #e3e6f0;
+    .progress-bar-container {
+        height: 6px;
+        background: #e3e6f0;
+        border-radius: 3px;
+        overflow: hidden;
     }
 
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    /* Project Footer */
+    .project-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e3e6f0;
+        background: #f8f9fc;
+    }
+
+    /* Team Members */
     .project-team {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-    }
-
-    .team-members {
-        display: flex;
-        margin-right: auto;
+        gap: -8px;
     }
 
     .team-member {
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: #e3e6f0;
+        background: #4e73df;
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 0.75rem;
         font-weight: 600;
-        color: #5a5c69;
         margin-left: -8px;
         border: 2px solid white;
+        position: relative;
+        z-index: 1;
     }
 
     .team-member:first-child {
@@ -247,26 +268,87 @@
     }
 
     .team-member.more {
-        background: #4e73df;
-        color: white;
+        background: #858796;
+        font-size: 0.65rem;
     }
 
+    /* Status Badges */
+    .project-status-badge {
+        display: flex;
+        align-items: center;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-badge.planning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.active {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .status-badge.completed {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-badge.paused {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-badge.cancelled {
+        background: #f5c6cb;
+        color: #721c24;
+    }
+
+    /* Action Buttons */
     .project-actions {
         display: flex;
         gap: 0.5rem;
+        z-index: 10;
+        position: relative;
     }
 
     .action-btn {
-        padding: 0.5rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
         border: none;
-        background: none;
-        color: #858796;
-        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: all 0.3s;
+        font-size: 0.85rem;
+        text-decoration: none;
     }
 
-    .action-btn:hover {
-        color: #4e73df;
+    .edit-btn {
+        background: #f6c23e;
+        color: white;
+    }
+
+    .edit-btn:hover {
+        background: #dda20a;
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .delete-btn {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .delete-btn:hover {
+        background: #c0392b;
         transform: scale(1.1);
     }
 
@@ -310,6 +392,16 @@
         .projects-grid {
             grid-template-columns: 1fr;
         }
+
+        .project-footer {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        
+        .project-actions {
+            align-self: flex-end;
+        }
     }
 </style>
 @endpush
@@ -333,6 +425,13 @@
                 <div>
                     <div class="stat-number">{{ $stats['active'] ?? 0 }}</div>
                     <div class="stat-label">Activos</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-lightbulb"></i>
+                <div>
+                    <div class="stat-number">{{ $stats['planning'] ?? 0 }}</div>
+                    <div class="stat-label">Planificación</div>
                 </div>
             </div>
             <div class="stat-item">
@@ -369,7 +468,9 @@
     @if($projects->count() > 0)
         <div class="projects-grid">
             @foreach($projects as $project)
-                <div class="project-card" data-status="{{ $project->status }}">
+                <div class="project-card" 
+                     data-status="{{ $project->status }}"
+                     onclick="window.location.href='{{ route('projects.show', $project) }}'">
                     <div class="project-status-indicator status-{{ $project->status }}"></div>
                     
                     <div class="project-header">
@@ -388,52 +489,73 @@
                     
                     <div class="project-body">
                         <p class="project-description">
-                            {{ $project->description ?: 'Sin descripción disponible' }}
+                            {{ $project->description ? Str::limit($project->description, 100) : 'Sin descripción disponible' }}
                         </p>
                         
-                        <div class="project-progress">
-                            <div class="progress-label">
+                        <!-- Progress Bar -->
+                        @php
+                            $totalTasks = $project->tasks->count();
+                            $completedTasks = $project->tasks->where('status', 'done')->count();
+                            $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+                        @endphp
+                        
+                        <div class="progress-section">
+                            <div class="progress-info">
                                 <span>Progreso</span>
-                                <span>{{ $project->progress ?? 0 }}%</span>
+                                <span>{{ $progress }}%</span>
                             </div>
-                            <div class="progress">
-                                <div class="progress-bar" role="progressbar" 
-                                     style="width: {{ $project->progress ?? 0 }}%"
-                                     aria-valuenow="{{ $project->progress ?? 0 }}" 
-                                     aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: {{ $progress }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="project-footer">
+                        <!-- Team Members -->
+                        <div class="project-team">
+                            @foreach($project->members->take(3) as $member)
+                                <div class="team-member" title="{{ $member->name }}">
+                                    {{ substr($member->name, 0, 1) }}
                                 </div>
-                            </div>
+                            @endforeach
+                            @if($project->members->count() > 3)
+                                <div class="team-member more" title="{{ $project->members->count() - 3 }} más">
+                                    +{{ $project->members->count() - 3 }}
+                                </div>
+                            @endif
                         </div>
                         
-                        <div class="project-team">
-                            <div class="team-members">
-                                @foreach($project->members->take(3) as $member)
-                                    <div class="team-member" title="{{ $member->name }}">
-                                        {{ strtoupper(substr($member->name, 0, 1)) }}
-                                    </div>
-                                @endforeach
-                                @if($project->members->count() > 3)
-                                    <div class="team-member more">
-                                        +{{ $project->members->count() - 3 }}
-                                    </div>
-                                @endif
-                            </div>
-                            
-                            <div class="project-actions">
-                                <a href="{{ route('projects.show', $project) }}" class="action-btn" title="Ver proyecto">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                @if($project->creator_id === auth()->id())
-                                    <a href="{{ route('projects.edit', $project) }}" class="action-btn" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button class="action-btn" title="Eliminar" 
-                                            onclick="confirmDelete({{ $project->id }})">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                @endif
-                            </div>
+                        <!-- Status Badge -->
+                        <div class="project-status-badge">
+                            @if($project->status == 'planning')
+                                <span class="status-badge planning"> Planificación</span>
+                            @elseif($project->status == 'active')
+                                <span class="status-badge active"> Activo</span>
+                            @elseif($project->status == 'completed')
+                                <span class="status-badge completed"> Completado</span>
+                            @elseif($project->status == 'paused')
+                                <span class="status-badge paused"> Pausado</span>
+                            @else
+                                <span class="status-badge cancelled"> Cancelado</span>
+                            @endif
                         </div>
+                        
+                        <!-- Action Buttons (Solo para creador) -->
+                        @if($project->creator_id == auth()->id())
+                            <div class="project-actions" onclick="event.stopPropagation()">
+                                <a href="{{ route('projects.edit', $project) }}" 
+                                   class="action-btn edit-btn" 
+                                   title="Editar"
+                                   onclick="event.stopPropagation()">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="action-btn delete-btn" 
+                                        title="Eliminar" 
+                                        onclick="event.stopPropagation(); confirmDelete({{ $project->id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endforeach
