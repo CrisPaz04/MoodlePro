@@ -48,7 +48,7 @@ class TaskController extends Controller
         $project = Project::findOrFail($request->project_id);
         
         // Verificar que el usuario sea miembro del proyecto
-        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+        if (!$project->members->contains(Auth::id()) && $project->created_by !== Auth::id()) {
             abort(403, 'No tienes acceso a este proyecto');
         }
         
@@ -93,7 +93,7 @@ public function store(Request $request)
 
         // Verificar acceso al proyecto
         $project = Project::findOrFail($validatedData['project_id']);
-        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+        if (!$project->members->contains(Auth::id()) && $project->created_by !== Auth::id()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -219,7 +219,7 @@ public function store(Request $request)
     {
         // Verificar acceso
         $project = $task->project;
-        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+        if (!$project->members->contains(Auth::id()) && $project->created_by !== Auth::id()) {
             abort(403, 'No tienes acceso a esta tarea');
         }
 
@@ -234,7 +234,7 @@ public function store(Request $request)
     public function edit(Task $task)
     {
         // Verificar acceso (solo creador o asignado)
-        if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+        if ($task->created_by !== Auth::id() && $task->assigned_to !== Auth::id()) {
             abort(403, 'No tienes permisos para editar esta tarea');
         }
 
@@ -250,7 +250,7 @@ public function store(Request $request)
     public function update(Request $request, Task $task)
     {
         // Verificar acceso
-        if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+        if ($task->created_by !== Auth::id() && $task->assigned_to !== Auth::id()) {
             abort(403, 'No tienes permisos para editar esta tarea');
         }
 
@@ -290,7 +290,7 @@ public function store(Request $request)
             // Notificar si se completó
             if ($oldStatus !== 'done' && $validatedData['status'] === 'done') {
                 Notification::create([
-                    'user_id' => $task->creator_id,
+                    'user_id' => $task->created_by,
                     'type' => 'task_completed',
                     'title' => 'Tarea completada',
                     'message' => "La tarea '{$task->title}' ha sido completada",
@@ -321,7 +321,7 @@ public function store(Request $request)
     public function destroy(Task $task)
     {
         // Solo el creador puede eliminar
-        if ($task->creator_id !== Auth::id()) {
+        if ($task->created_by !== Auth::id()) {
             abort(403, 'Solo el creador puede eliminar esta tarea');
         }
 
@@ -348,7 +348,7 @@ public function store(Request $request)
     {
         try {
             // Verificar acceso
-            if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+            if ($task->created_by !== Auth::id() && $task->assigned_to !== Auth::id()) {
                 return response()->json(['error' => 'Sin permisos'], 403);
             }
 
@@ -369,14 +369,14 @@ public function store(Request $request)
             // Notificar si se completó
             if ($oldStatus !== 'done' && $request->status === 'done') {
                 Notification::create([
-                    'user_id' => $task->creator_id,
+                    'user_id' => $task->created_by,
                     'type' => 'task_completed',
                     'title' => 'Tarea completada',
                     'message' => "La tarea '{$task->title}' ha sido completada",
                     'data' => json_encode([
-                        'task_id' => $task->id,
-                        'project_id' => $task->project_id,
-                        'completed_by' => Auth::user()->name,
+                    'task_id' => $task->id,
+                    'project_id' => $task->project_id,
+                    'completed_by' => Auth::user()->name,
                     ]),
                 ]);
             }
@@ -399,7 +399,7 @@ public function store(Request $request)
     {
         try {
             // Verificar acceso
-            if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+            if ($task->created_by !== Auth::id() && $task->assigned_to !== Auth::id()) {
                 return response()->json(['error' => 'Sin permisos'], 403);
             }
 
@@ -411,9 +411,9 @@ public function store(Request $request)
             $task->save();
 
             // Crear notificación
-            if ($task->creator_id !== Auth::id()) {
+            if ($task->created_by !== Auth::id()) {
                 Notification::create([
-                    'user_id' => $task->creator_id,
+                    'user_id' => $task->created_by,
                     'type' => 'task_completed',
                     'title' => 'Tarea completada',
                     'message' => "La tarea '{$task->title}' ha sido completada por " . Auth::user()->name,

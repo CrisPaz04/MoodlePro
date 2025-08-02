@@ -38,10 +38,10 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
-    // Una tarea fue creada por un usuario (CORREGIDO: usando 'creator_id')
+    // Una tarea fue creada por un usuario
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'creator_id');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     // Scopes para filtrar tareas
