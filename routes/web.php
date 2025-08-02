@@ -65,10 +65,11 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
     Route::resource('tasks', TaskController::class);
     
-    // API para actualizar tareas en Kanban
+    // API para tareas (RUTAS COMPLETAS AGREGADAS)
     Route::prefix('api/tasks')->name('api.tasks.')->group(function () {
         Route::patch('/{task}/status', [TaskController::class, 'updateStatus'])->name('updateStatus');
         Route::patch('/{task}/order', [TaskController::class, 'updateOrder'])->name('updateOrder');
+        Route::post('/{task}/complete', [TaskController::class, 'markComplete'])->name('complete');
     });
     
     // ============================================
@@ -175,11 +176,11 @@ if (app()->environment('local')) {
                 'start_date' => now(),
                 'deadline' => now()->addMonths(2),
                 'status' => 'active',
-                'created_by' => $user->id,
+                'creator_id' => $user->id,
             ]);
             
             // Agregar al usuario como miembro
-            $project->members()->attach($user->id, ['role' => 'leader']);
+            $project->members()->attach($user->id, ['role' => 'coordinator']);
             
             // Crear algunas tareas
             for ($i = 1; $i <= 5; $i++) {
@@ -191,7 +192,8 @@ if (app()->environment('local')) {
                     'priority' => ['low', 'medium', 'high'][rand(0, 2)],
                     'due_date' => now()->addDays(rand(1, 30)),
                     'assigned_to' => $user->id,
-                    'created_by' => $user->id,
+                    'creator_id' => $user->id,
+                    'order' => $i,
                 ]);
             }
             

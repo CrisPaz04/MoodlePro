@@ -118,6 +118,9 @@
         .hero-buttons {
             animation: fadeInUp 0.8s ease 0.4s;
             animation-fill-mode: both;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
         
         .btn-get-started {
@@ -129,13 +132,31 @@
             text-decoration: none;
             display: inline-block;
             transition: all 0.3s;
-            margin-right: 1rem;
+            border: 2px solid white;
         }
         
         .btn-get-started:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             color: var(--primary-color);
+        }
+        
+        .btn-login-hero {
+            background: transparent;
+            color: white;
+            padding: 1rem 2.5rem;
+            border: 2px solid white;
+            border-radius: 3rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        
+        .btn-login-hero:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            color: white;
         }
         
         .btn-learn-more {
@@ -228,13 +249,39 @@
         
         .feature-card p {
             color: #6c757d;
-            line-height: 1.7;
+            line-height: 1.6;
+        }
+        
+        /* About Section */
+        .about-section {
+            padding: 5rem 0;
+            background: white;
+        }
+        
+        .about-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .about-content h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        .about-content p {
+            font-size: 1.1rem;
+            color: #6c757d;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
         }
         
         /* Stats Section */
         .stats-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 4rem 0;
+            padding: 3rem 0;
+            background: var(--primary-color);
             color: white;
         }
         
@@ -256,7 +303,7 @@
         /* CTA Section */
         .cta-section {
             padding: 5rem 0;
-            background: var(--dark-color);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
         }
@@ -264,7 +311,7 @@
         .cta-section h2 {
             font-size: 2.5rem;
             font-weight: 700;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
         
         .cta-section p {
@@ -275,15 +322,21 @@
         
         /* Footer */
         footer {
-            background: #1a1a1a;
+            background: var(--dark-color);
             color: white;
-            padding: 3rem 0 2rem;
+            padding: 3rem 0;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
         }
         
         .footer-links a {
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
-            margin: 0 1rem;
             transition: color 0.3s;
         }
         
@@ -304,14 +357,11 @@
         }
         
         @keyframes float {
-            0% {
+            0%, 100% {
                 transform: translateY(0px);
             }
             50% {
                 transform: translateY(-20px);
-            }
-            100% {
-                transform: translateY(0px);
             }
         }
         
@@ -321,13 +371,17 @@
                 font-size: 2.5rem;
             }
             
+            .hero-text p {
+                font-size: 1.1rem;
+            }
+            
             .hero-buttons {
-                display: flex;
                 flex-direction: column;
                 gap: 1rem;
             }
             
             .btn-get-started,
+            .btn-login-hero,
             .btn-learn-more {
                 width: 100%;
                 text-align: center;
@@ -384,8 +438,18 @@
                                 @auth
                                     <a href="{{ url('/dashboard') }}" class="btn-get-started">Ir al Dashboard</a>
                                 @else
-                                    <a href="{{ route('register') }}" class="btn-get-started">Comenzar Gratis</a>
-                                    <a href="#features" class="btn-learn-more">Conocer Más</a>
+                                    <a href="{{ route('register') }}" class="btn-get-started">
+                                        <i class="fas fa-rocket me-2"></i>
+                                        Comenzar Gratis
+                                    </a>
+                                    <a href="{{ route('login') }}" class="btn-login-hero">
+                                        <i class="fas fa-sign-in-alt me-2"></i>
+                                        Iniciar Sesión
+                                    </a>
+                                    <a href="#features" class="btn-learn-more">
+                                        <i class="fas fa-arrow-down me-2"></i>
+                                        Conocer Más
+                                    </a>
                                 @endauth
                             </div>
                         </div>
@@ -407,7 +471,6 @@
                                 <line x1="150" y1="160" x2="320" y2="160" stroke="#fff" stroke-width="2" opacity="0.5"/>
                                 <circle cx="120" cy="200" r="15" fill="#fff" opacity="0.8"/>
                                 <line x1="150" y1="200" x2="360" y2="200" stroke="#fff" stroke-width="2" opacity="0.5"/>
-                                <rect x="300" y="220" width="80" height="30" rx="15" fill="#fff" opacity="0.9"/>
                             </svg>
                         </div>
                     </div>
@@ -417,67 +480,79 @@
     </section>
 
     <!-- Features Section -->
-    <section class="features-section" id="features">
+    <section id="features" class="features-section">
         <div class="container">
             <div class="section-title">
-                <h2>Todo lo que Necesitas en un Solo Lugar</h2>
-                <p>Herramientas diseñadas para mejorar la experiencia educativa</p>
+                <h2>Características Principales</h2>
+                <p>Todo lo que necesitas para una gestión académica moderna</p>
             </div>
             <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
+                <div class="col-lg-4 col-md-6">
                     <div class="feature-card">
                         <div class="feature-icon">
-                            <i class="fas fa-tasks"></i>
+                            <i class="fas fa-project-diagram"></i>
                         </div>
                         <h3>Gestión de Proyectos</h3>
-                        <p>Organiza tus proyectos académicos con tableros Kanban intuitivos y gestión de tareas en tiempo real.</p>
+                        <p>Organiza tus proyectos académicos con épicas, historias y tareas. Sistema completo de seguimiento.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-columns"></i>
+                        </div>
+                        <h3>Tablero Kanban</h3>
+                        <p>Visualiza el progreso de tus tareas con un tablero intuitivo de arrastrar y soltar.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h3>Dashboard Analítico</h3>
+                        <p>Métricas en tiempo real, gráficos interactivos y seguimiento de progreso.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-comments"></i>
                         </div>
-                        <h3>Chat Integrado</h3>
-                        <p>Comunícate con tu equipo directamente desde la plataforma con mensajería instantánea por proyecto.</p>
+                        <h3>Chat por Proyecto</h3>
+                        <p>Comunicación en tiempo real con tu equipo, organizada por proyecto.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-lg-4 col-md-6">
                     <div class="feature-card">
                         <div class="feature-icon">
-                            <i class="fas fa-chart-line"></i>
+                            <i class="fas fa-book"></i>
                         </div>
-                        <h3>Dashboard Analítico</h3>
-                        <p>Visualiza tu progreso con gráficos interactivos y métricas en tiempo real de tu rendimiento académico.</p>
+                        <h3>Biblioteca de Recursos</h3>
+                        <p>Sistema colaborativo de archivos con ratings y comentarios de la comunidad.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-lg-4 col-md-6">
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="fas fa-bell"></i>
                         </div>
                         <h3>Notificaciones Inteligentes</h3>
-                        <p>Mantente al día con notificaciones personalizadas sobre tareas, deadlines y actividad del equipo.</p>
+                        <p>Mantente al día con notificaciones personalizadas y en tiempo real.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-folder-open"></i>
-                        </div>
-                        <h3>Biblioteca de Recursos</h3>
-                        <p>Comparte y accede a materiales de estudio con un sistema de archivos organizado y calificaciones.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-mobile-alt"></i>
-                        </div>
-                        <h3>Diseño Responsive</h3>
-                        <p>Accede desde cualquier dispositivo con una interfaz optimizada para móviles, tablets y escritorio.</p>
-                    </div>
-                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="container">
+            <div class="about-content">
+                <h2>¿Por qué MoodlePro?</h2>
+                <p>MoodlePro nace como respuesta a las limitaciones de las plataformas académicas tradicionales. Hemos reimaginado la experiencia de gestión académica desde cero.</p>
+                <p>Con una interfaz moderna, herramientas colaborativas avanzadas y un enfoque en la productividad, MoodlePro es la evolución natural de Moodle.</p>
+                <p>Diseñado por estudiantes para estudiantes, con la flexibilidad que profesores y administradores necesitan.</p>
             </div>
         </div>
     </section>
@@ -488,8 +563,8 @@
             <div class="row">
                 <div class="col-md-3 col-6 mb-4 mb-md-0">
                     <div class="stat-item">
-                        <div class="stat-number">40+</div>
-                        <div class="stat-label">Características</div>
+                        <div class="stat-number">8+</div>
+                        <div class="stat-label">Características Core</div>
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-4 mb-md-0">

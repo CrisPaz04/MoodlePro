@@ -1,4 +1,5 @@
 <?php
+// Ruta: app/Http/Controllers/TaskController.php
 
 namespace App\Http\Controllers;
 
@@ -13,188 +14,206 @@ use Exception;
 
 class TaskController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     /**
-     * Display a listing of the resource.
+     * Mostrar lista de todas las tareas del usuario
      */
     public function index()
     {
         $user = Auth::user();
         
-        // Tareas del usuario con sus proyectos
+        // Obtener tareas del usuario
         $tasks = $user->assignedTasks()
-            ->with(['project', 'assignedUser', 'creator'])
+            ->with(['project', 'creator'])
             ->orderBy('due_date', 'asc')
-            ->paginate(12);
+            ->get();
             
-        // Proyectos del usuario para el filtro
-        $projects = $user->projects()->orderBy('title')->get();
-        
-        // Estadísticas
-        $stats = [
-            'total' => $user->assignedTasks()->count(),
-            'pending' => $user->assignedTasks()->whereIn('status', ['todo', 'in_progress'])->count(),
-            'completed' => $user->assignedTasks()->where('status', 'done')->count(),
-            'overdue' => $user->assignedTasks()
-                ->where('due_date', '<', now())
-                ->where('status', '!=', 'done')
-                ->count()
-        ];
-        
-        return view('tasks.index', compact('tasks', 'projects', 'stats'));
+        // Obtener TODOS los proyectos del usuario (para el filtro)
+        $allUserProjects = $user->projects()
+            ->orderBy('title', 'asc')
+            ->get();
+            
+        return view('tasks.index', compact('tasks', 'allUserProjects'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Mostrar formulario de creación
      */
-    public function create()
+    public function create(Request $request)
     {
-        $projects = Auth::user()->projects()->orderBy('title')->get();
-        return view('tasks.create', compact('projects'));
+        $project = Project::findOrFail($request->project_id);
+        
+        // Verificar que el usuario sea miembro del proyecto
+        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+            abort(403, 'No tienes acceso a este proyecto');
+        }
+        
+        $members = $project->members;
+        
+        return view('tasks.create', compact('project', 'members'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        try {
-            // Validar datos de entrada
-            $validatedData = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'project_id' => 'required|exists:projects,id',
-                'assigned_to' => 'nullable|exists:users,id',
-                'priority' => 'required|in:low,medium,high',
-                'due_date' => 'nullable|date|after_or_equal:today',
-                'status' => 'required|in:todo,in_progress,done'
-            ], [
-                'title.required' => 'El título es obligatorio',
-                'project_id.required' => 'Debes seleccionar un proyecto',
-                'project_id.exists' => 'El proyecto seleccionado no es válido',
-                'priority.required' => 'La prioridad es obligatoria',
-                'priority.in' => 'La prioridad debe ser: baja, media o alta',
-                'due_date.after_or_equal' => 'La fecha de vencimiento no puede ser anterior a hoy',
-                'status.required' => 'El estado es obligatorio'
-            ]);
+/**
+ * Guardar nueva tarea (VERSIÓN FINAL CORREGIDA)
+ */
+public function store(Request $request)
+{
+    try {
+        // Log para debug
+        \Log::info('Creando tarea', [
+            'user_id' => Auth::id(),
+            'project_id' => $request->project_id,
+            'request_data' => $request->all()
+        ]);
 
-            // Verificar que el usuario tenga acceso al proyecto
-            $project = Project::findOrFail($validatedData['project_id']);
-            if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
-                return back()->withErrors(['project_id' => 'No tienes acceso a este proyecto'])->withInput();
-            }
+        // Validación
+        $validatedData = $request->validate([
+            'project_id' => 'required|exists:projects,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'required|in:low,medium,high',
+            'assigned_to' => 'nullable|exists:users,id',
+            'due_date' => 'nullable|date|after_or_equal:today',
+            'status' => 'nullable|in:todo,in_progress,done',
+        ], [
+            'project_id.required' => 'El proyecto es obligatorio',
+            'project_id.exists' => 'El proyecto no existe',
+            'title.required' => 'El título de la tarea es obligatorio',
+            'title.max' => 'El título no puede exceder 255 caracteres',
+            'priority.required' => 'La prioridad es obligatoria',
+            'priority.in' => 'La prioridad debe ser: baja, media o alta',
+            'assigned_to.exists' => 'El usuario asignado no es válido',
+            'due_date.after_or_equal' => 'La fecha de vencimiento no puede ser anterior a hoy',
+            'status.in' => 'Estado inválido',
+        ]);
 
-            // Si se asigna a alguien, verificar que sea miembro del proyecto
-            if ($request->assigned_to && !$project->members->contains($request->assigned_to)) {
-                return back()->withErrors(['assigned_to' => 'El usuario asignado debe ser miembro del proyecto'])->withInput();
-            }
-
-            DB::beginTransaction();
-
-            // Obtener el orden máximo para las tareas en el estado inicial
-            $maxOrder = Task::where('project_id', $validatedData['project_id'])
-                ->where('status', $validatedData['status'])
-                ->max('order') ?? -1;
-
-            // Crear la tarea
-            $task = Task::create([
-                'title' => $validatedData['title'],
-                'description' => $validatedData['description'],
-                'project_id' => $validatedData['project_id'],
-                'assigned_to' => $validatedData['assigned_to'],
-                'created_by' => Auth::id(),
-                'priority' => $validatedData['priority'],
-                'due_date' => $validatedData['due_date'],
-                'status' => $validatedData['status'],
-                'order' => $maxOrder + 1
-            ]);
-
-            // NOTIFICACIÓN: Si se asignó a alguien
-            if ($task->assigned_to && $task->assigned_to !== Auth::id()) {
-                $assignedUser = User::find($task->assigned_to);
-                if ($assignedUser) {
-                    Notification::create([
-                        'user_id' => $task->assigned_to,
-                        'type' => Notification::TYPE_TASK_ASSIGNED,
-                        'title' => 'Nueva tarea asignada',
-                        'message' => ':assigner te asignó la tarea ":task_title" en el proyecto :project_title',
-                        'data' => [
-                            'task_title' => $task->title,
-                            'task_id' => $task->id,
-                            'project_title' => $project->title,
-                            'project_id' => $project->id,
-                            'assigner' => Auth::user()->name,
-                        ],
-                        'related_type' => Task::class,
-                        'related_id' => $task->id,
-                        'action_url' => route('projects.show', $project->id),
-                    ]);
-                }
-            }
-
-            // NOTIFICACIÓN: A todos los miembros del proyecto sobre la nueva tarea
-            $project->members()
-                ->where('user_id', '!=', Auth::id()) // Excepto al creador
-                ->where('user_id', '!=', $task->assigned_to) // Y al asignado (ya fue notificado)
-                ->get()
-                ->each(function ($member) use ($task, $project) {
-                    Notification::create([
-                        'user_id' => $member->id,
-                        'type' => 'task_created',
-                        'title' => 'Nueva tarea en proyecto',
-                        'message' => 'Se creó la tarea ":task_title" en el proyecto :project_title',
-                        'data' => [
-                            'task_title' => $task->title,
-                            'project_title' => $project->title,
-                            'created_by' => Auth::user()->name,
-                        ],
-                        'related_type' => Task::class,
-                        'related_id' => $task->id,
-                        'action_url' => route('projects.show', $project->id),
-                    ]);
-                });
-
-            DB::commit();
-
-            // Si es una solicitud AJAX, retornar JSON
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Tarea creada exitosamente',
-                    'task' => $task->load(['assignedUser', 'creator']),
-                    'redirect' => route('projects.show', $validatedData['project_id'])
-                ]);
-            }
-
-            return redirect()->route('projects.show', $validatedData['project_id'])
-                ->with('success', 'Tarea creada exitosamente');
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            
-            // Log del error
-            \Log::error('Error al crear tarea: ' . $e->getMessage(), [
-                'user_id' => Auth::id(),
-                'project_id' => $request->project_id,
-                'error' => $e->getMessage()
-            ]);
-
-            // Si es una solicitud AJAX, retornar error JSON
-            if ($request->ajax() || $request->wantsJson()) {
+        // Verificar acceso al proyecto
+        $project = Project::findOrFail($validatedData['project_id']);
+        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+            if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error al crear la tarea. Por favor intenta nuevamente.',
-                    'errors' => ['general' => ['Ha ocurrido un error al crear la tarea']]
+                    'message' => 'No tienes acceso a este proyecto',
+                    'errors' => ['project_id' => ['No tienes acceso a este proyecto']]
+                ], 403);
+            }
+            abort(403, 'No tienes acceso a este proyecto');
+        }
+
+        // Si se asigna a alguien, verificar que sea miembro del proyecto
+        if ($validatedData['assigned_to'] && !$project->members->contains($validatedData['assigned_to'])) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El usuario asignado no es miembro del proyecto',
+                    'errors' => ['assigned_to' => ['El usuario asignado no es miembro del proyecto']]
                 ], 422);
             }
-
             return redirect()->back()
-                ->withErrors(['error' => 'Error al crear la tarea. Por favor intenta nuevamente.'])
+                ->withErrors(['assigned_to' => 'El usuario asignado no es miembro del proyecto'])
                 ->withInput();
         }
+
+        // Crear la tarea (USANDO NOMENCLATURA CORRECTA)
+        $task = Task::create([
+            'project_id' => $validatedData['project_id'],
+            'title' => $validatedData['title'],
+            'description' => $validatedData['description'],
+            'priority' => $validatedData['priority'],
+            'status' => $validatedData['status'] ?? 'todo',
+            'creator_id' => Auth::id(), // CORREGIDO: usando creator_id
+            'assigned_to' => $validatedData['assigned_to'] ?? Auth::id(),
+            'due_date' => $validatedData['due_date'],
+            'order' => Task::where('project_id', $validatedData['project_id'])->max('order') + 1,
+        ]);
+
+        // Crear notificación si se asigna a otro usuario
+        if ($task->assigned_to && $task->assigned_to !== Auth::id()) {
+            Notification::create([
+                'user_id' => $task->assigned_to,
+                'type' => 'task_assigned',
+                'title' => 'Nueva tarea asignada',
+                'message' => "Te han asignado la tarea: {$task->title}",
+                'data' => json_encode([
+                    'task_id' => $task->id,
+                    'project_id' => $task->project_id,
+                    'project_name' => $project->title,
+                    'creator_name' => Auth::user()->name,
+                ]),
+            ]);
+        }
+
+        // Log de éxito
+        \Log::info('Tarea creada exitosamente', [
+            'task_id' => $task->id,
+            'user_id' => Auth::id()
+        ]);
+
+        // Respuesta para peticiones AJAX/JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tarea creada exitosamente',
+                'task' => $task->load(['assignedUser', 'creator']),
+                'redirect' => route('projects.show', $project)
+            ], 201);
+        }
+
+        // Respuesta para peticiones normales
+        return redirect()
+            ->route('projects.show', $project)
+            ->with('success', 'Tarea creada exitosamente');
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        // Log de error de validación
+        \Log::warning('Error de validación al crear tarea', [
+            'user_id' => Auth::id(),
+            'errors' => $e->errors()
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        return redirect()
+            ->back()
+            ->withErrors($e->errors())
+            ->withInput();
+
+    } catch (Exception $e) {
+        // Log del error
+        \Log::error('Error al crear tarea: ' . $e->getMessage(), [
+            'user_id' => Auth::id(),
+            'project_id' => $request->project_id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor. Por favor intenta nuevamente.',
+                'errors' => ['general' => ['Ha ocurrido un error interno']]
+            ], 500);
+        }
+
+        return redirect()
+            ->back()
+            ->withErrors(['error' => 'Error al crear la tarea. Por favor intenta nuevamente.'])
+            ->withInput();
     }
+}
 
     /**
-     * Display the specified resource.
+     * Mostrar detalles de una tarea
      */
     public function show(Task $task)
     {
@@ -203,314 +222,214 @@ class TaskController extends Controller
         if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
             abort(403, 'No tienes acceso a esta tarea');
         }
+
+        $task->load(['project', 'creator', 'assignedUser']);
         
-        $task->load(['project', 'assignedUser', 'creator']);
         return view('tasks.show', compact('task'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Mostrar formulario de edición
      */
     public function edit(Task $task)
     {
-        // Verificar acceso
-        $project = $task->project;
-        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
-            abort(403, 'No tienes acceso a esta tarea');
+        // Verificar acceso (solo creador o asignado)
+        if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+            abort(403, 'No tienes permisos para editar esta tarea');
         }
-        
+
+        $project = $task->project;
         $members = $project->members;
+        
         return view('tasks.edit', compact('task', 'project', 'members'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Actualizar tarea
      */
     public function update(Request $request, Task $task)
     {
-        try {
-            // Verificar acceso
-            $project = $task->project;
-            if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
-                abort(403, 'No tienes acceso a esta tarea');
-            }
+        // Verificar acceso
+        if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+            abort(403, 'No tienes permisos para editar esta tarea');
+        }
 
-            $validated = $request->validate([
+        try {
+            $validatedData = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'priority' => 'required|in:low,medium,high',
+                'status' => 'required|in:todo,in_progress,done',
                 'assigned_to' => 'nullable|exists:users,id',
-                'due_date' => 'nullable|date|after_or_equal:today',
-                'status' => 'required|in:todo,in_progress,done'
+                'due_date' => 'nullable|date',
             ], [
                 'title.required' => 'El título de la tarea es obligatorio',
                 'priority.required' => 'La prioridad es obligatoria',
-                'priority.in' => 'La prioridad debe ser: baja, media o alta',
-                'assigned_to.exists' => 'El usuario asignado no es válido',
-                'due_date.after_or_equal' => 'La fecha de vencimiento no puede ser anterior a hoy',
                 'status.required' => 'El estado es obligatorio',
-                'status.in' => 'Estado inválido'
             ]);
 
-            // Si se asigna a alguien, verificar que sea miembro del proyecto
-            if ($request->assigned_to && !$project->members->contains($request->assigned_to)) {
-                return back()->withErrors(['assigned_to' => 'El usuario asignado debe ser miembro del proyecto']);
-            }
-
-            DB::beginTransaction();
-
-            // Guardar valores anteriores para comparación
             $oldAssignedTo = $task->assigned_to;
             $oldStatus = $task->status;
 
-            $task->update($validated);
+            $task->update($validatedData);
 
-            // NOTIFICACIÓN: Si se cambió la asignación
-            if ($oldAssignedTo != $task->assigned_to && $task->assigned_to) {
-                $assignedUser = User::find($task->assigned_to);
-                if ($assignedUser && $task->assigned_to !== Auth::id()) {
-                    Notification::create([
-                        'user_id' => $task->assigned_to,
-                        'type' => Notification::TYPE_TASK_ASSIGNED,
-                        'title' => 'Tarea reasignada',
-                        'message' => ':assigner te asignó la tarea ":task_title"',
-                        'data' => [
-                            'task_title' => $task->title,
-                            'assigner' => Auth::user()->name,
-                        ],
-                        'related_type' => Task::class,
-                        'related_id' => $task->id,
-                        'action_url' => route('tasks.show', $task->id),
-                    ]);
-                }
-            }
-
-            // NOTIFICACIÓN: Si la tarea se completó
-            if ($oldStatus !== 'done' && $task->status === 'done') {
-                // Notificar al creador del proyecto
-                if ($project->creator_id !== Auth::id()) {
-                    Notification::create([
-                        'user_id' => $project->creator_id,
-                        'type' => Notification::TYPE_TASK_COMPLETED,
-                        'title' => 'Tarea completada',
-                        'message' => 'La tarea ":task_title" ha sido completada por :user',
-                        'data' => [
-                            'task_title' => $task->title,
-                            'user' => Auth::user()->name,
-                        ],
-                        'related_type' => Task::class,
-                        'related_id' => $task->id,
-                        'action_url' => route('tasks.show', $task->id),
-                    ]);
-                }
-            }
-
-            DB::commit();
-
-            // Si es petición AJAX
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Tarea actualizada exitosamente',
-                    'task' => $task->fresh()->load(['assignedUser', 'creator']),
-                    'redirect' => route('projects.show', $task->project_id)
+            // Notificar si cambió el asignado
+            if ($validatedData['assigned_to'] && $validatedData['assigned_to'] !== $oldAssignedTo) {
+                Notification::create([
+                    'user_id' => $validatedData['assigned_to'],
+                    'type' => 'task_assigned',
+                    'title' => 'Tarea reasignada',
+                    'message' => "Te han asignado la tarea: {$task->title}",
+                    'data' => json_encode([
+                        'task_id' => $task->id,
+                        'project_id' => $task->project_id,
+                    ]),
                 ]);
             }
 
-            return redirect()->route('projects.show', $task->project_id)
+            // Notificar si se completó
+            if ($oldStatus !== 'done' && $validatedData['status'] === 'done') {
+                Notification::create([
+                    'user_id' => $task->creator_id,
+                    'type' => 'task_completed',
+                    'title' => 'Tarea completada',
+                    'message' => "La tarea '{$task->title}' ha sido completada",
+                    'data' => json_encode([
+                        'task_id' => $task->id,
+                        'project_id' => $task->project_id,
+                        'completed_by' => Auth::user()->name,
+                    ]),
+                ]);
+            }
+
+            return redirect()
+                ->route('projects.show', $task->project)
                 ->with('success', 'Tarea actualizada exitosamente');
 
         } catch (Exception $e) {
-            DB::rollBack();
-            
-            \Log::error('Error al actualizar tarea: ' . $e->getMessage(), [
-                'user_id' => Auth::id(),
-                'task_id' => $task->id,
-                'error' => $e->getMessage()
-            ]);
-
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al actualizar la tarea',
-                    'errors' => ['general' => ['Ha ocurrido un error al actualizar la tarea']]
-                ], 422);
-            }
-
-            return redirect()->back()
-                ->withErrors(['error' => 'Error al actualizar la tarea'])
-                ->withInput();
+            \Log::error('Error updating task: ' . $e->getMessage());
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Hubo un error al actualizar la tarea');
         }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Eliminar tarea
      */
     public function destroy(Task $task)
     {
-        try {
-            // Solo el creador de la tarea o coordinadores pueden eliminar
-            $project = $task->project;
-            $userRole = $project->members()
-                ->where('user_id', Auth::id())
-                ->first()
-                ->pivot
-                ->role ?? null;
-                
-            if ($task->created_by !== Auth::id() && 
-                $project->creator_id !== Auth::id() && 
-                $userRole !== 'coordinator') {
-                abort(403, 'No tienes permisos para eliminar esta tarea');
-            }
+        // Solo el creador puede eliminar
+        if ($task->creator_id !== Auth::id()) {
+            abort(403, 'Solo el creador puede eliminar esta tarea');
+        }
 
-            $projectId = $task->project_id;
-            $taskTitle = $task->title;
-            
+        try {
+            $project = $task->project;
             $task->delete();
 
-            // Si es petición AJAX
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Tarea eliminada exitosamente',
-                    'redirect' => route('projects.show', $projectId)
-                ]);
-            }
-
-            return redirect()->route('projects.show', $projectId)
+            return redirect()
+                ->route('projects.show', $project)
                 ->with('success', 'Tarea eliminada exitosamente');
-                
+
         } catch (Exception $e) {
-            \Log::error('Error al eliminar tarea: ' . $e->getMessage());
-            
-            if (request()->ajax() || request()->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al eliminar la tarea'
-                ], 500);
-            }
-            
-            return redirect()->back()
-                ->with('error', 'Error al eliminar la tarea');
+            \Log::error('Error deleting task: ' . $e->getMessage());
+            return redirect()
+                ->back()
+                ->with('error', 'Hubo un error al eliminar la tarea');
         }
     }
 
     /**
-     * Update task status via API (for Kanban)
+     * API: Actualizar estado de tarea (para Kanban)
      */
     public function updateStatus(Request $request, Task $task)
     {
         try {
             // Verificar acceso
-            $project = $task->project;
-            if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
-                return response()->json(['error' => 'No autorizado'], 403);
-            }
-
-            $request->validate([
-                'status' => 'required|in:todo,in_progress,done'
-            ]);
-            
-            $oldStatus = $task->status;
-            $task->update(['status' => $request->status]);
-
-            // NOTIFICACIONES: Según cambios de estado
-            if ($oldStatus !== $request->status) {
-                // Si se marca como completada
-                if ($request->status === 'done' && $task->assigned_to && $task->assigned_to !== Auth::id()) {
-                    Notification::create([
-                        'user_id' => $task->assigned_to,
-                        'type' => Notification::TYPE_TASK_COMPLETED,
-                        'title' => 'Tarea completada',
-                        'message' => 'Tu tarea ":task_title" fue marcada como completada',
-                        'data' => [
-                            'task_title' => $task->title,
-                        ],
-                        'related_type' => Task::class,
-                        'related_id' => $task->id,
-                        'action_url' => route('projects.show', $project),
-                    ]);
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'task' => $task->fresh()->load('assignedUser'),
-                'message' => 'Estado actualizado correctamente'
-            ]);
-
-        } catch (Exception $e) {
-            \Log::error('Error al actualizar estado de tarea: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Error al actualizar el estado'
-            ], 500);
-        }
-    }
-
-    /**
-     * Update task order in Kanban board
-     */
-    public function updateOrder(Request $request, Task $task)
-    {
-        try {
-            // Verificar acceso
-            $project = $task->project;
-            if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
-                return response()->json(['error' => 'No autorizado'], 403);
+            if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+                return response()->json(['error' => 'Sin permisos'], 403);
             }
 
             $request->validate([
                 'status' => 'required|in:todo,in_progress,done',
-                'order' => 'required|integer|min:0',
+                'order' => 'nullable|integer|min:0'
             ]);
-            
-            DB::beginTransaction();
-            
+
             $oldStatus = $task->status;
+            $task->status = $request->status;
             
-            // Actualizar estado si cambió
-            if ($task->status !== $request->status) {
-                $task->status = $request->status;
+            if ($request->has('order')) {
+                $task->order = $request->order;
             }
             
-            // Actualizar orden
-            $task->order = $request->order;
             $task->save();
-            
-            // Reordenar otras tareas si es necesario
-            $tasksInColumn = Task::where('project_id', $task->project_id)
-                ->where('status', $request->status)
-                ->where('id', '!=', $task->id)
-                ->where('order', '>=', $request->order)
-                ->orderBy('order')
-                ->get();
-            
-            $currentOrder = $request->order + 1;
-            foreach ($tasksInColumn as $columnTask) {
-                if ($columnTask->order != $currentOrder) {
-                    $columnTask->update(['order' => $currentOrder]);
-                }
-                $currentOrder++;
+
+            // Notificar si se completó
+            if ($oldStatus !== 'done' && $request->status === 'done') {
+                Notification::create([
+                    'user_id' => $task->creator_id,
+                    'type' => 'task_completed',
+                    'title' => 'Tarea completada',
+                    'message' => "La tarea '{$task->title}' ha sido completada",
+                    'data' => json_encode([
+                        'task_id' => $task->id,
+                        'project_id' => $task->project_id,
+                        'completed_by' => Auth::user()->name,
+                    ]),
+                ]);
             }
-            
-            DB::commit();
-            
+
             return response()->json([
                 'success' => true,
-                'task' => $task->fresh()->load('assignedUser'),
-                'message' => 'Orden actualizado correctamente'
+                'task' => $task->load(['project', 'creator', 'assignedUser'])
             ]);
 
         } catch (Exception $e) {
-            DB::rollBack();
-            \Log::error('Error al actualizar orden de tarea: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Error al actualizar el orden'
-            ], 500);
+            \Log::error('Error updating task status: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno'], 500);
+        }
+    }
+
+    /**
+     * API: Marcar tarea como completada
+     */
+    public function markComplete(Task $task)
+    {
+        try {
+            // Verificar acceso
+            if ($task->creator_id !== Auth::id() && $task->assigned_to !== Auth::id()) {
+                return response()->json(['error' => 'Sin permisos'], 403);
+            }
+
+            if ($task->status === 'done') {
+                return response()->json(['error' => 'La tarea ya está completada'], 400);
+            }
+
+            $task->status = 'done';
+            $task->save();
+
+            // Crear notificación
+            if ($task->creator_id !== Auth::id()) {
+                Notification::create([
+                    'user_id' => $task->creator_id,
+                    'type' => 'task_completed',
+                    'title' => 'Tarea completada',
+                    'message' => "La tarea '{$task->title}' ha sido completada por " . Auth::user()->name,
+                    'data' => json_encode([
+                        'task_id' => $task->id,
+                        'project_id' => $task->project_id,
+                        'completed_by' => Auth::user()->name,
+                    ]),
+                ]);
+            }
+
+            return response()->json(['success' => true]);
+
+        } catch (Exception $e) {
+            \Log::error('Error marking task complete: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno'], 500);
         }
     }
 }

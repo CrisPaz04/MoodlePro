@@ -890,79 +890,135 @@ document.getElementById('createTaskForm').addEventListener('submit', async funct
     spinner.classList.remove('d-none');
     
     try {
+        // Preparar FormData
         const formData = new FormData(form);
-        const response = await fetch(form.action, {
+        
+        // CORREGIDO: Usar fetch con headers correctos
+        const response = await fetch('{{ route("tasks.store") }}', {
             method: 'POST',
             body: formData,
             headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json',
             }
         });
         
-        const responseText = await response.text();
-        console.log('Response status:', response.status);
-        console.log('Response text:', responseText);
-        
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('Error parsing JSON:', parseError);
-            console.error('Raw response:', responseText);
-            errorDiv.textContent = 'Error del servidor. La respuesta no es válida.';
-            errorDiv.classList.remove('d-none');
-            return;
+        // Verificar si la respuesta es OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        if (response.ok && data.success) {
-            // Éxito: recargar la página
-            window.location.reload();
-        } else {
-            // Manejar errores de validación
-            console.error('Error response:', data);
+        // Obtener el tipo de contenido
+        const contentType = response.headers.get('content-type');
+        
+        if (!contentType || !contentType.includes('application/json')) {
+            // Si no es JSON, obtener el texto para debug
+            const responseText = await response.text();
+            console.error('Respuesta no es JSON:', responseText);
+            throw new Error('El servidor no devolvió una respuesta JSON válida');
+        }
+        
+        // Parsear JSON
+        const data = await response.json();
+        
+        if (data.success) {
+            // Éxito: mostrar notificación y recargar
+            showNotification('Tarea creada exitosamente', 'success');
+            taskModal.hide();
             
+            // Recargar la página para mostrar la nueva tarea
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+        } else {
+            // Error del servidor
             if (data.errors) {
+                // Mostrar errores de validación
                 let errorMessages = [];
-                
-                // Errores de campos específicos
                 for (const [field, messages] of Object.entries(data.errors)) {
-                    const input = form.querySelector(`[name="${field}"]`);
-                    if (input && field !== 'general') {
+                    errorMessages.push(...messages);
+                    
+                    // Marcar campo como inválido
+                    const input = document.querySelector(`[name="${field}"]`);
+                    if (input) {
                         input.classList.add('is-invalid');
-                        const feedback = input.parentElement.querySelector('.invalid-feedback');
-                        if (feedback) {
+                        const feedback = input.nextElementSibling;
+                        if (feedback && feedback.classList.contains('invalid-feedback')) {
                             feedback.textContent = messages[0];
                         }
                     }
-                    
-                    // Agregar al mensaje general
-                    if (field === 'general' || !input) {
-                        errorMessages.push(...messages);
-                    }
                 }
-                
-                // Mostrar errores generales
-                if (errorMessages.length > 0) {
-                    errorDiv.innerHTML = errorMessages.join('<br>');
-                    errorDiv.classList.remove('d-none');
-                }
+                errorDiv.textContent = errorMessages.join(', ');
             } else {
-                // Si no hay estructura de errores, mostrar el mensaje o un genérico
                 errorDiv.textContent = data.message || 'Error al crear la tarea';
-                errorDiv.classList.remove('d-none');
             }
+            errorDiv.classList.remove('d-none');
         }
+        
     } catch (error) {
-        console.error('Error:', error);
-        errorDiv.textContent = 'Error de conexión. Por favor intenta nuevamente.';
+        console.error('Error al crear tarea:', error);
+        errorDiv.textContent = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
         errorDiv.classList.remove('d-none');
     } finally {
-        // Ocultar loading
+        // Restaurar botón
         submitBtn.disabled = false;
         spinner.classList.add('d-none');
     }
 });
+
+// Función para mostrar notificaciones
+function showNotification(message, type = 'info') {
+    // Remover notificaciones anteriores
+    const existingNotifications = document.querySelectorAll('.custom-notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Crear nueva notificación
+    const notification = document.createElement('div');
+    notification.className = 'custom-notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 500px;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#007bff'};
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; margin-left: 1rem;">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Mostrar notificación
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Auto-ocultar después de 5 segundos
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
 
 // Inicializar Sortable.js para cada columna
 document.addEventListener('DOMContentLoaded', function() {

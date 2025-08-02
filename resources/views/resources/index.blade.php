@@ -633,11 +633,7 @@
             <i class="fas fa-folder-open"></i>
             <h3>No hay recursos disponibles</h3>
             <p>Sé el primero en compartir material de estudio</p>
-            <button class="upload-btn" onclick="showUploadModal()">
-                <i class="fas fa-cloud-upload-alt"></i>
-                Subir Recurso
-            </button>
-        </div>
+       </div>
     @endif
 </div>
 
