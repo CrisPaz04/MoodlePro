@@ -44,52 +44,83 @@ class MessageController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'project_id' => 'required|exists:projects,id',
-            'content' => 'required|string|max:500'
-        ]);
-
-        // Verificar acceso al proyecto
-        $project = Project::findOrFail($request->project_id);
-        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
-            abort(403, 'No tienes acceso a este proyecto');
-        }
-
-        // Crear mensaje
-        $message = Message::create([
-            'project_id' => $request->project_id,
-            'user_id' => Auth::id(),
-            'content' => $request->content
-        ]);
-
-        // Cargar relación con usuario
-        $message->load('user');
-
-        // Notificar a los miembros del proyecto (excepto al emisor)
-        foreach ($project->members as $member) {
-            if ($member->id !== Auth::id()) {
-                // Aquí se crearía la notificación
-                \App\Models\Notification::messageReceived($member, $message);
-            }
-        }
-
-        // Si es petición AJAX
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => [
-                    'id' => $message->id,
-                    'content' => $message->content,
-                    'user' => [
-                        'id' => $message->user->id,
-                        'name' => $message->user->name
-                    ],
-                    'created_at' => $message->created_at->toISOString()
-                ]
+        try {
+            $request->validate([
+                'project_id' => 'required|exists:projects,id',
+                'content' => 'required|string|max:500'
             ]);
-        }
 
-        return redirect()->back();
+            // Verificar acceso al proyecto
+            $project = Project::findOrFail($request->project_id);
+            if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No tienes acceso a este proyecto'
+                    ], 403);
+                }
+                abort(403, 'No tienes acceso a este proyecto');
+            }
+
+            // Crear mensaje
+            $message = Message::create([
+                'project_id' => $request->project_id,
+                'user_id' => Auth::id(),
+                'content' => $request->content
+            ]);
+
+            // Cargar relación con usuario
+            $message->load('user');
+
+            // Notificar a los miembros del proyecto (excepto al emisor)
+            foreach ($project->members as $member) {
+                if ($member->id !== Auth::id()) {
+                    // Aquí se crearía la notificación
+                    \App\Models\Notification::messageReceived($member, $message);
+                }
+            }
+
+            // SIEMPRE devolver JSON para peticiones con Accept: application/json
+            if ($request->ajax() || $request->wantsJson() || $request->header('Accept') === 'application/json') {
+                return response()->json([
+                    'success' => true,
+                    'message' => [
+                        'id' => $message->id,
+                        'content' => $message->content,
+                        'user' => [
+                            'id' => $message->user->id,
+                            'name' => $message->user->name
+                        ],
+                        'created_at' => $message->created_at->toISOString()
+                    ]
+                ]);
+            }
+
+            return redirect()->back();
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson() || $request->header('Accept') === 'application/json') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+
+        } catch (\Exception $e) {
+            \Log::error('Error al enviar mensaje: ' . $e->getMessage());
+            
+            if ($request->ajax() || $request->wantsJson() || $request->header('Accept') === 'application/json') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al enviar el mensaje',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Error al enviar el mensaje');
+        }
     }
 
     /**
@@ -134,14 +165,28 @@ class MessageController extends Controller
     {
         // Solo el autor puede eliminar
         if ($message->user_id !== Auth::id()) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permisos para eliminar este mensaje'
+                ], 403);
+            }
             abort(403, 'No tienes permisos para eliminar este mensaje');
         }
 
-        $message->delete();
+        try {
+            $message->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Mensaje eliminado'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Mensaje eliminado'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el mensaje'
+            ], 500);
+        }
     }
 }
