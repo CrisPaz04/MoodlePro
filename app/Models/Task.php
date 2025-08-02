@@ -17,7 +17,7 @@ class Task extends Model
         'status',
         'priority',
         'assigned_to',
-        'creator_id',  // CORREGIDO: cambié de 'created_by' a 'creator_id'
+        'created_by',
         'due_date',
         'order'
     ];
