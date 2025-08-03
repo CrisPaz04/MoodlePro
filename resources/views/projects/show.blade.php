@@ -807,27 +807,29 @@
                             <div class="mb-3">
                                 <label for="taskPriority" class="form-label">Prioridad <span class="text-danger">*</span></label>
                                 <select class="form-select" id="taskPriority" name="priority" required>
+                                    <option value="">Seleccionar prioridad</option>
                                     <option value="low">Baja</option>
                                     <option value="medium" selected>Media</option>
                                     <option value="high">Alta</option>
                                 </select>
+                                <div class="invalid-feedback"></div>
                             </div>
                         </div>
                         
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="taskDueDate" class="form-label">Fecha de entrega</label>
+                                <label for="taskDueDate" class="form-label">Fecha de entrega <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="taskDueDate" name="due_date" 
-                                       min="{{ date('Y-m-d') }}">
+                                       min="{{ date('Y-m-d') }}" required>
                                 <div class="invalid-feedback"></div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="taskAssignee" class="form-label">Asignar a</label>
-                        <select class="form-select" id="taskAssignee" name="assigned_to">
-                            <option value="">Sin asignar</option>
+                        <label for="taskAssignee" class="form-label">Asignar a <span class="text-danger">*</span></label>
+                        <select class="form-select" id="taskAssignee" name="assigned_to" required>
+                            <option value="">Seleccionar miembro del equipo</option>
                             @foreach($project->members as $member)
                                 <option value="{{ $member->id }}">{{ $member->name }}</option>
                             @endforeach
