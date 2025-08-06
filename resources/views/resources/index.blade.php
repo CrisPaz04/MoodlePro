@@ -9,194 +9,137 @@
         color: white;
         padding: 3rem 0;
         margin-bottom: 2rem;
-        border-radius: 0 0 2rem 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .library-header h1 {
         font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .library-header .lead {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        animation: fadeInUp 0.6s ease-out 0.1s both;
     }
 
     .header-stats {
         display: flex;
         gap: 2rem;
-        margin-top: 1.5rem;
+        margin-top: 2rem;
+        animation: fadeInUp 0.6s ease-out 0.2s both;
     }
 
     .stat-item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 0.75rem 1.5rem;
-        border-radius: 2rem;
-        backdrop-filter: blur(10px);
+        gap: 1rem;
     }
 
     .stat-item i {
-        font-size: 1.5rem;
+        font-size: 2rem;
+        opacity: 0.8;
     }
 
-    .controls-section {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        margin-bottom: 2rem;
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
     }
 
     .controls-row {
         display: flex;
         gap: 1rem;
-        align-items: center;
+        margin-bottom: 2rem;
         flex-wrap: wrap;
+        align-items: center;
     }
 
     .search-box {
-        position: relative;
         flex: 1;
-        min-width: 250px;
+        min-width: 300px;
+        position: relative;
     }
 
     .search-box input {
-        width: 100%;
-        padding: 0.75rem 1rem 0.75rem 3rem;
-        border: 2px solid #e3e6f0;
-        border-radius: 0.5rem;
+        padding-left: 3rem;
+        border-radius: 50px;
+        border: 1px solid #e3e6f0;
         transition: all 0.3s;
     }
 
     .search-box input:focus {
-        border-color: #4e73df;
-        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #667eea;
     }
 
     .search-box i {
         position: absolute;
-        left: 1rem;
+        left: 1.2rem;
         top: 50%;
         transform: translateY(-50%);
         color: #858796;
     }
 
-    .filter-dropdown {
-        position: relative;
-    }
-
-    .filter-btn {
-        background: white;
-        border: 2px solid #e3e6f0;
-        padding: 0.75rem 1.25rem;
-        border-radius: 0.5rem;
+    .filter-group {
         display: flex;
-        align-items: center;
         gap: 0.5rem;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .filter-btn:hover {
-        border-color: #4e73df;
-    }
-
-    .upload-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .upload-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        flex-wrap: wrap;
     }
 
     .view-toggle {
         display: flex;
-        background: #e3e6f0;
-        border-radius: 0.5rem;
+        background: #f8f9fc;
+        border-radius: 50px;
         padding: 0.25rem;
     }
 
     .view-toggle button {
-        background: transparent;
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
-        cursor: pointer;
-        transition: all 0.3s;
+        background: transparent;
         color: #858796;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        transition: all 0.3s;
+        cursor: pointer;
     }
 
     .view-toggle button.active {
         background: white;
-        color: #4e73df;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-
-    .category-pills {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-bottom: 2rem;
-    }
-
-    .category-pill {
-        padding: 0.5rem 1rem;
-        background: white;
-        border: 2px solid #e3e6f0;
-        border-radius: 2rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .category-pill.active {
-        background: #4e73df;
-        color: white;
-        border-color: #4e73df;
-    }
-
-    .category-pill span {
-        background: rgba(0, 0, 0, 0.1);
-        padding: 0.125rem 0.5rem;
-        border-radius: 1rem;
-        font-size: 0.75rem;
+        color: #667eea;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .resources-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 1.5rem;
+        animation: fadeIn 0.6s ease-out;
     }
 
     .resource-card {
         background: white;
         border-radius: 0.5rem;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         transition: all 0.3s;
-        cursor: pointer;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
     .resource-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.15);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }
 
     .resource-preview {
-        height: 200px;
+        height: 180px;
         background: #f8f9fc;
         display: flex;
         align-items: center;
@@ -205,38 +148,42 @@
         overflow: hidden;
     }
 
-    .resource-icon {
+    .resource-preview i {
         font-size: 4rem;
         color: #d1d3e2;
     }
 
-    .resource-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .resource-type-badge {
+    .resource-category {
         position: absolute;
         top: 1rem;
         right: 1rem;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(102, 126, 234, 0.9);
         color: white;
         padding: 0.25rem 0.75rem;
-        border-radius: 2rem;
-        font-size: 0.75rem;
-        font-weight: 600;
+        border-radius: 50px;
+        font-size: 0.8rem;
     }
 
-    .resource-info {
+    .resource-body {
         padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
     }
 
     .resource-title {
-        font-size: 1.125rem;
+        font-size: 1.1rem;
         font-weight: 600;
-        color: #2e3440;
+        color: #2d3748;
         margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+
+    .resource-description {
+        color: #858796;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        flex: 1;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -245,54 +192,10 @@
 
     .resource-meta {
         display: flex;
-        gap: 1rem;
-        font-size: 0.875rem;
-        color: #858796;
-        margin-bottom: 1rem;
-    }
-
-    .resource-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .resource-description {
-        color: #5a5c69;
-        font-size: 0.875rem;
-        margin-bottom: 1rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .resource-rating {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .stars {
-        display: flex;
-        gap: 0.125rem;
-    }
-
-    .star {
-        color: #f6c23e;
-    }
-
-    .star.empty {
-        color: #d1d3e2;
-    }
-
-    .resource-footer {
-        display: flex;
         justify-content: space-between;
         align-items: center;
-        padding-top: 1rem;
-        border-top: 1px solid #e3e6f0;
+        font-size: 0.85rem;
+        color: #858796;
     }
 
     .resource-author {
@@ -301,62 +204,52 @@
         gap: 0.5rem;
     }
 
-    .author-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: #e3e6f0;
+    .resource-stats {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .resource-stats span {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: #5a5c69;
+        gap: 0.25rem;
     }
 
-    .resource-actions {
-        display: flex;
-        gap: 0.5rem;
+    .rating {
+        color: #f6c23e;
     }
 
-    .action-btn {
-        padding: 0.5rem;
-        background: none;
-        border: none;
-        color: #858796;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .action-btn:hover {
-        color: #4e73df;
-        transform: scale(1.1);
-    }
-
-    /* List View Styles */
     .resources-list .resource-card {
-        display: flex;
-        align-items: center;
-        padding: 1.5rem;
+        flex-direction: row;
+        margin-bottom: 1rem;
     }
 
     .resources-list .resource-preview {
-        width: 120px;
-        height: 120px;
-        flex-shrink: 0;
-        margin-right: 1.5rem;
+        width: 200px;
+        height: auto;
     }
 
-    .resources-list .resource-icon {
-        font-size: 3rem;
-    }
-
-    .resources-list .resource-info {
+    .resources-list .resource-body {
         flex: 1;
-        padding: 0;
     }
 
-    /* Upload Modal */
+    .upload-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+    }
+
+    .upload-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.35);
+    }
+
+    /* Modal de subida */
     .upload-modal {
         display: none;
         position: fixed;
@@ -366,21 +259,23 @@
         height: 100%;
         background: rgba(0, 0, 0, 0.5);
         z-index: 1050;
-        align-items: center;
-        justify-content: center;
+        animation: fadeIn 0.3s;
     }
 
     .upload-modal.show {
         display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .upload-content {
         background: white;
+        border-radius: 0.5rem;
         width: 90%;
         max-width: 600px;
-        border-radius: 0.5rem;
-        overflow: hidden;
-        animation: slideIn 0.3s ease;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideIn 0.3s;
     }
 
     .upload-header {
@@ -492,8 +387,8 @@
             <div class="stat-item">
                 <i class="fas fa-star"></i>
                 <div>
-                    <div class="stat-number">{{ $stats['rating'] ?? '0.0' }}</div>
-                    <div class="stat-label">Calificación</div>
+                    <div class="stat-number">{{ $stats['rating'] ?? 0 }}</div>
+                    <div class="stat-label">Rating Promedio</div>
                 </div>
             </div>
         </div>
@@ -501,61 +396,42 @@
 </div>
 
 <div class="container">
-    <!-- Controls Section -->
-    <div class="controls-section">
-        <div class="controls-row">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Buscar recursos..." id="searchInput">
-            </div>
-            
-            <div class="filter-dropdown">
-                <button class="filter-btn">
-                    <i class="fas fa-filter"></i>
-                    Filtros
-                </button>
-            </div>
-            
-            <button class="upload-btn" onclick="showUploadModal()">
-                <i class="fas fa-cloud-upload-alt"></i>
-                Subir Recurso
-            </button>
-            
-            <div class="view-toggle">
-                <button class="active" onclick="setView('grid')">
-                    <i class="fas fa-th"></i>
-                </button>
-                <button onclick="setView('list')">
-                    <i class="fas fa-list"></i>
-                </button>
-            </div>
+    <!-- Controls -->
+    <div class="controls-row">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" class="form-control" placeholder="Buscar recursos..." id="searchInput">
         </div>
-    </div>
-
-    <!-- Category Pills -->
-    <div class="category-pills">
-        <button class="category-pill active" data-category="all">
-            Todos <span>{{ $resources->count() }}</span>
-        </button>
-        <button class="category-pill" data-category="document">
-            <i class="fas fa-file-pdf"></i>
-            Documentos <span>{{ $resources->where('category', 'document')->count() }}</span>
-        </button>
-        <button class="category-pill" data-category="presentation">
-            <i class="fas fa-file-powerpoint"></i>
-            Presentaciones <span>{{ $resources->where('category', 'presentation')->count() }}</span>
-        </button>
-        <button class="category-pill" data-category="video">
-            <i class="fas fa-video"></i>
-            Videos <span>{{ $resources->where('category', 'video')->count() }}</span>
-        </button>
-        <button class="category-pill" data-category="code">
-            <i class="fas fa-code"></i>
-            Código <span>{{ $resources->where('category', 'code')->count() }}</span>
-        </button>
-        <button class="category-pill" data-category="other">
-            <i class="fas fa-folder"></i>
-            Otros <span>{{ $resources->where('category', 'other')->count() }}</span>
+        
+        <div class="filter-group">
+            <select class="form-select" id="categoryFilter">
+                <option value="all">Todas las categorías</option>
+                <option value="document">Documentos</option>
+                <option value="presentation">Presentaciones</option>
+                <option value="video">Videos</option>
+                <option value="code">Código</option>
+                <option value="other">Otros</option>
+            </select>
+            
+            <select class="form-select" id="sortFilter">
+                <option value="recent">Más recientes</option>
+                <option value="popular">Más populares</option>
+                <option value="rated">Mejor calificados</option>
+            </select>
+        </div>
+        
+        <div class="view-toggle">
+            <button class="active" onclick="setView('grid')">
+                <i class="fas fa-th"></i>
+            </button>
+            <button onclick="setView('list')">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+        
+        <button class="upload-btn" onclick="showUploadModal()">
+            <i class="fas fa-upload me-2"></i>
+            Subir Recurso
         </button>
     </div>
 
@@ -563,66 +439,37 @@
     @if($resources->count() > 0)
         <div class="resources-grid" id="resourcesContainer">
             @foreach($resources as $resource)
-                <div class="resource-card" data-category="{{ $resource->category }}">
+                <div class="resource-card">
                     <div class="resource-preview">
-                        @if($resource->thumbnail)
-                            <img src="{{ $resource->thumbnail }}" alt="{{ $resource->title }}" class="resource-image">
-                        @else
-                            <i class="fas fa-{{ $resource->icon ?? 'file' }} resource-icon"></i>
-                        @endif
-                        <span class="resource-type-badge">{{ strtoupper($resource->file_type) }}</span>
+                        <i class="fas fa-{{ $resource->icon ?? 'file' }}"></i>
+                        <span class="resource-category">{{ ucfirst($resource->category) }}</span>
                     </div>
-                    
-                    <div class="resource-info">
+                    <div class="resource-body">
                         <h3 class="resource-title">{{ $resource->title }}</h3>
-                        
+                        <p class="resource-description">{{ $resource->description ?? 'Sin descripción' }}</p>
                         <div class="resource-meta">
-                            <div class="resource-meta-item">
-                                <i class="fas fa-calendar"></i>
-                                {{ $resource->created_at->format('d M') }}
-                            </div>
-                            <div class="resource-meta-item">
-                                <i class="fas fa-file"></i>
-                                {{ $resource->file_size }}
-                            </div>
-                            <div class="resource-meta-item">
-                                <i class="fas fa-download"></i>
-                                {{ $resource->downloads_count ?? 0 }}
-                            </div>
-                        </div>
-                        
-                        <p class="resource-description">
-                            {{ $resource->description ?: 'Sin descripción disponible' }}
-                        </p>
-                        
-                        <div class="resource-rating">
-                            <div class="stars">
-                                @for($i = 1; $i <= 5; $i++)
-                                    <i class="fas fa-star {{ $i <= ($resource->rating ?? 0) ? '' : 'empty' }}"></i>
-                                @endfor
-                            </div>
-                            <span>({{ $resource->ratings_count ?? 0 }} votos)</span>
-                        </div>
-                        
-                        <div class="resource-footer">
                             <div class="resource-author">
-                                <div class="author-avatar">
-                                    {{ strtoupper(substr($resource->uploader->name ?? 'U', 0, 1)) }}
-                                </div>
+                                <i class="fas fa-user-circle"></i>
                                 <span>{{ $resource->uploader->name ?? 'Usuario' }}</span>
                             </div>
-                            
-                            <div class="resource-actions">
-                                <button class="action-btn" title="Descargar">
+                            <div class="resource-stats">
+                                <span class="rating">
+                                    <i class="fas fa-star"></i>
+                                    {{ number_format($resource->rating ?? 0, 1) }}
+                                </span>
+                                <span>
                                     <i class="fas fa-download"></i>
-                                </button>
-                                <button class="action-btn" title="Favorito">
-                                    <i class="far fa-heart"></i>
-                                </button>
-                                <button class="action-btn" title="Compartir">
-                                    <i class="fas fa-share"></i>
-                                </button>
+                                    {{ $resource->downloads_count ?? 0 }}
+                                </span>
                             </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ route('resources.show', $resource) }}" class="btn btn-sm btn-primary">
+                                Ver detalles
+                            </a>
+                            <a href="{{ route('resources.download', $resource) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download"></i> Descargar
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -632,26 +479,35 @@
         <div class="empty-state">
             <i class="fas fa-folder-open"></i>
             <h3>No hay recursos disponibles</h3>
-            <p>Sé el primero en compartir material de estudio</p>
-       </div>
+            <p>¡Sé el primero en compartir material de estudio!</p>
+            <button class="btn btn-primary" onclick="showUploadModal()">
+                <i class="fas fa-upload me-2"></i>
+                Subir el primer recurso
+            </button>
+        </div>
     @endif
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-center mt-4">
+        {{ $resources->links() }}
+    </div>
 </div>
 
-<!-- Upload Modal -->
-<div class="upload-modal" id="uploadModal">
+<!-- Modal de Subida -->
+<div id="uploadModal" class="upload-modal">
     <div class="upload-content">
         <div class="upload-header">
             <h3>Subir Nuevo Recurso</h3>
-            <button onclick="hideUploadModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">
+            <button type="button" onclick="hideUploadModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         
         <div class="upload-body">
-            <form action="{{ route('resources.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('resources.store') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
                 @csrf
                 
-                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-zone" id="uploadZone">
                     <i class="fas fa-cloud-upload-alt"></i>
                     <h4>Arrastra y suelta archivos aquí</h4>
                     <p>o haz clic para seleccionar</p>
@@ -672,6 +528,7 @@
                     <div class="mb-3">
                         <label class="form-label">Categoría</label>
                         <select class="form-select" name="category" required>
+                            <option value="">Seleccionar categoría</option>
                             <option value="document">Documento</option>
                             <option value="presentation">Presentación</option>
                             <option value="video">Video</option>
@@ -681,7 +538,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Proyecto Relacionado</label>
+                        <label class="form-label">Proyecto Relacionado (opcional)</label>
                         <select class="form-select" name="project_id">
                             <option value="">Ninguno</option>
                             @foreach($projects ?? [] as $project)
@@ -690,9 +547,12 @@
                         </select>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-upload me-2"></i>Subir Recurso
-                    </button>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="hideUploadModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Subir Recurso
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -702,41 +562,10 @@
 
 @push('scripts')
 <script>
-// Search functionality
-document.getElementById('searchInput').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const resources = document.querySelectorAll('.resource-card');
-    
-    resources.forEach(resource => {
-        const title = resource.querySelector('.resource-title').textContent.toLowerCase();
-        const description = resource.querySelector('.resource-description').textContent.toLowerCase();
-        
-        if (title.includes(searchTerm) || description.includes(searchTerm)) {
-            resource.style.display = '';
-        } else {
-            resource.style.display = 'none';
-        }
-    });
-});
-
-// Category filter
-document.querySelectorAll('.category-pill').forEach(pill => {
-    pill.addEventListener('click', function() {
-        document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
-        this.classList.add('active');
-        
-        const category = this.dataset.category;
-        const resources = document.querySelectorAll('.resource-card');
-        
-        resources.forEach(resource => {
-            if (category === 'all' || resource.dataset.category === category) {
-                resource.style.display = '';
-            } else {
-                resource.style.display = 'none';
-            }
-        });
-    });
-});
+// Variables globales
+let selectedFile = null;
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
 
 // View toggle
 function setView(view) {
@@ -747,24 +576,76 @@ function setView(view) {
     event.target.closest('button').classList.add('active');
     
     if (view === 'list') {
+        container.classList.remove('resources-grid');
         container.classList.add('resources-list');
     } else {
         container.classList.remove('resources-list');
+        container.classList.add('resources-grid');
     }
 }
 
-// Upload modal
+// Modal functions
 function showUploadModal() {
     document.getElementById('uploadModal').classList.add('show');
 }
 
 function hideUploadModal() {
     document.getElementById('uploadModal').classList.remove('show');
+    document.getElementById('uploadForm').reset();
+    resetUploadZone();
+    selectedFile = null;
 }
 
-// Drag and drop
-const uploadZone = document.querySelector('.upload-zone');
+// Reset upload zone
+function resetUploadZone() {
+    uploadZone.innerHTML = `
+        <i class="fas fa-cloud-upload-alt"></i>
+        <h4>Arrastra y suelta archivos aquí</h4>
+        <p>o haz clic para seleccionar</p>
+        <input type="file" id="fileInput" name="file" style="display: none;" required>
+    `;
+    // Re-attach event listeners
+    document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+}
 
+// Handle file selection
+function handleFileSelect(e) {
+    const files = e.target.files;
+    if (files.length > 0) {
+        selectedFile = files[0];
+        updateUploadZone(selectedFile);
+    }
+}
+
+// Update upload zone with file info
+function updateUploadZone(file) {
+    uploadZone.innerHTML = `
+        <i class="fas fa-file"></i>
+        <h4>${file.name}</h4>
+        <p>${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+        <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="resetFileSelection()">
+            Cambiar archivo
+        </button>
+    `;
+}
+
+// Reset file selection
+function resetFileSelection() {
+    selectedFile = null;
+    resetUploadZone();
+}
+
+// Click handler for upload zone
+uploadZone.addEventListener('click', function(e) {
+    if (!selectedFile && !e.target.closest('button')) {
+        fileInput.click();
+    }
+});
+
+// File input change handler
+fileInput.addEventListener('change', handleFileSelect);
+
+// Drag and drop handlers
 uploadZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     uploadZone.classList.add('dragover');
@@ -780,25 +661,48 @@ uploadZone.addEventListener('drop', (e) => {
     
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-        document.getElementById('fileInput').files = files;
-        uploadZone.innerHTML = `
-            <i class="fas fa-file"></i>
-            <h4>${files[0].name}</h4>
-            <p>${(files[0].size / 1024 / 1024).toFixed(2)} MB</p>
-        `;
+        selectedFile = files[0];
+        updateUploadZone(selectedFile);
     }
 });
 
-// File input change
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    if (e.target.files.length > 0) {
-        const file = e.target.files[0];
-        document.querySelector('.upload-zone').innerHTML = `
-            <i class="fas fa-file"></i>
-            <h4>${file.name}</h4>
-            <p>${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-        `;
+// Form submit handler
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    if (selectedFile) {
+        // Create a new file input with the selected file
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(selectedFile);
+        
+        // Find or create the file input in the form
+        let formFileInput = this.querySelector('input[name="file"]');
+        if (!formFileInput) {
+            formFileInput = document.createElement('input');
+            formFileInput.type = 'file';
+            formFileInput.name = 'file';
+            formFileInput.style.display = 'none';
+            this.appendChild(formFileInput);
+        }
+        
+        formFileInput.files = dataTransfer.files;
     }
+});
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    // Aquí iría la lógica de búsqueda
+    console.log('Buscando:', this.value);
+});
+
+// Category filter
+document.getElementById('categoryFilter').addEventListener('change', function() {
+    // Aquí iría la lógica de filtrado
+    console.log('Filtrando por categoría:', this.value);
+});
+
+// Sort filter
+document.getElementById('sortFilter').addEventListener('change', function() {
+    // Aquí iría la lógica de ordenamiento
+    console.log('Ordenando por:', this.value);
 });
 </script>
 @endpush

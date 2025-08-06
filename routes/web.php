@@ -8,6 +8,7 @@ use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\FileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +43,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/chart/{type}', [HomeController::class, 'getChartData'])->name('chart');
         Route::get('/activity', [HomeController::class, 'getRecentActivity'])->name('activity');
         Route::get('/stats', [HomeController::class, 'getStats'])->name('stats');
+    });
+
+    Route::middleware(['auth'])->group(function () {
+    // ... otras rutas existentes ...
+    
+    // Files (Library)
+    Route::resource('files', FileController::class);
+    Route::get('files/{file}/download', [FileController::class, 'download'])->name('files.download');
+    Route::post('files/{file}/rate', [FileController::class, 'rate'])->name('files.rate');
+    Route::get('files/{file}/preview', [FileController::class, 'preview'])->name('files.preview');
     });
     
     // ============================================

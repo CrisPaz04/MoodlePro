@@ -161,23 +161,44 @@ class ProjectController extends Controller
     /**
      * Mostrar detalles del proyecto
      */
-    public function show(Project $project)
+public function show(Project $project)
     {
         // Verificar acceso
-        if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+        if (!$project->members->contains(auth()->id()) && $project->creator_id !== auth()->id()) {
             abort(403, 'No tienes acceso a este proyecto');
         }
 
-        $project->load(['members', 'tasks.assignedUser', 'creator']);
-        
-        // Organizar tareas por estado para el Kanban
-        $tasksByStatus = [
-            'todo' => $project->tasks->where('status', 'todo')->sortBy('order'),
-            'in_progress' => $project->tasks->where('status', 'in_progress')->sortBy('order'),
-            'done' => $project->tasks->where('status', 'done')->sortBy('order'),
+        // Cargar relaciones necesarias
+        $project->load([
+            'creator',
+            'members',
+            'tasks' => function ($query) {
+                $query->orderBy('order');
+            },
+            'messages' => function ($query) {
+                $query->latest()->limit(50);
+            },
+            'messages.user'
+        ]);
+
+        // Obtener recursos/archivos del proyecto
+        $resources = \App\Models\Resource::where('project_id', $project->id)
+            ->with('uploader')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Estadísticas del proyecto
+        $stats = [
+            'total_tasks' => $project->tasks->count(),
+            'completed_tasks' => $project->tasks->where('status', 'completed')->count(),
+            'progress' => $project->tasks->count() > 0 
+                ? round(($project->tasks->where('status', 'completed')->count() / $project->tasks->count()) * 100)
+                : 0,
+            'total_files' => $resources->count(),
+            'total_downloads' => $resources->sum('downloads_count')
         ];
 
-        return view('projects.show', compact('project', 'tasksByStatus'));
+        return view('projects.show', compact('project', 'stats', 'resources'));
     }
 
     /**
