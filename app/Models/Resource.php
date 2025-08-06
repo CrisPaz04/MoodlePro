@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 class Resource extends Model
@@ -15,85 +14,141 @@ class Resource extends Model
         'title',
         'description',
         'file_path',
+        'file_url',
         'file_name',
         'file_type',
         'file_size',
         'category',
-        'tags',
+        'icon',
         'uploaded_by',
-        'average_rating',
-        'total_ratings',
-        'download_count',
-        'is_public'
+        'project_id',
+        'downloads_count',
+        'rating',
+        'ratings_count'
     ];
 
     protected $casts = [
-        'average_rating' => 'decimal:1',
-        'is_public' => 'boolean',
+        'downloads_count' => 'integer',
+        'rating' => 'float',
+        'ratings_count' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Un recurso pertenece a un usuario (quien lo subió)
-    public function uploader(): BelongsTo
+    /**
+     * Get the user who uploaded the resource
+     */
+    public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
-    // Scopes para filtrar recursos
-    public function scopePublic($query)
+    /**
+     * Get the project this resource belongs to
+     */
+    public function project()
     {
-        return $query->where('is_public', true);
+        return $this->belongsTo(Project::class);
     }
 
-    public function scopeByCategory($query, $category)
+    /**
+     * Get category label
+     */
+    public function getCategoryLabelAttribute()
     {
-        return $query->where('category', $category);
+        $labels = [
+            'document' => 'Documento',
+            'presentation' => 'Presentación',
+            'video' => 'Video',
+            'code' => 'Código',
+            'other' => 'Otro'
+        ];
+
+        return $labels[$this->category] ?? ucfirst($this->category);
     }
 
-    public function scopePopular($query)
+    /**
+     * Get formatted rating
+     */
+    public function getFormattedRatingAttribute()
     {
-        return $query->orderBy('download_count', 'desc');
+        return number_format($this->rating, 1);
     }
 
-    public function scopeTopRated($query)
+    /**
+     * Check if resource is an image
+     */
+    public function isImage()
     {
-        return $query->orderBy('average_rating', 'desc');
+        return in_array($this->file_type, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']);
     }
 
-    public function scopeRecent($query)
+    /**
+     * Check if resource is a video
+     */
+    public function isVideo()
     {
-        return $query->orderBy('created_at', 'desc');
+        return in_array($this->file_type, ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm']);
     }
 
-    // Método para obtener URL de descarga
-    public function getDownloadUrl()
+    /**
+     * Check if resource is audio
+     */
+    public function isAudio()
     {
-        return Storage::url($this->file_path);
+        return in_array($this->file_type, ['mp3', 'wav', 'ogg', 'flac', 'm4a']);
     }
 
-    // Método para formatear tamaño de archivo
-    public function getFormattedSize()
+    /**
+     * Check if resource is a document
+     */
+    public function isDocument()
     {
-        $bytes = $this->file_size;
-        $units = ['B', 'KB', 'MB', 'GB'];
-        
-        for ($i = 0; $bytes > 1024; $i++) {
-            $bytes /= 1024;
+        return in_array($this->file_type, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt']);
+    }
+
+    /**
+     * Check if resource is code
+     */
+    public function isCode()
+    {
+        return in_array($this->file_type, ['html', 'css', 'js', 'php', 'py', 'java', 'cpp', 'c', 'rb', 'go']);
+    }
+
+    /**
+     * Get the file URL (from S3 or fallback to local)
+     */
+    public function getFileUrlAttribute()
+    {
+        // Si ya tenemos una URL de S3, usarla
+        if ($this->attributes['file_url'] ?? null) {
+            return $this->attributes['file_url'];
         }
+
+        // Fallback para archivos antiguos en storage local
+        if ($this->file_path) {
+            return Storage::url($this->file_path);
+        }
+
+        return null;
+    }
+
+    /**
+     * Delete the file from storage when the model is deleted
+     */
+    protected static function boot()
+    {
+        parent::boot();
         
-        return round($bytes, 2) . ' ' . $units[$i];
-    }
-
-    // Método para incrementar descargas
-    public function incrementDownloads()
-    {
-        $this->increment('download_count');
-    }
-
-    // Método para calcular rating promedio
-    public function updateRating($newRating)
-    {
-        $this->total_ratings++;
-        $this->average_rating = (($this->average_rating * ($this->total_ratings - 1)) + $newRating) / $this->total_ratings;
-        $this->save();
+        static::deleting(function ($resource) {
+            // Intentar eliminar de S3
+            try {
+                if ($resource->file_path) {
+                    Storage::disk('moodlepro')->delete($resource->file_path);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Error al eliminar archivo de S3: ' . $e->getMessage());
+            }
+        });
     }
 }

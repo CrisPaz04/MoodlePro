@@ -170,6 +170,55 @@
         display: block;
     }
 
+    /* File Cards */
+.file-icon {
+    width: 50px;
+    height: 50px;
+    background: #f8f9fc;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-icon i {
+    font-size: 1.5rem;
+}
+
+#files .card {
+    transition: all 0.3s;
+    border: 1px solid #e3e6f0;
+}
+
+#files .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+#files .card-title a {
+    color: #2d3436;
+    font-weight: 600;
+}
+
+#files .card-title a:hover {
+    color: #667eea;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Empty state */
+#files .text-center i {
+    opacity: 0.3;
+}
+
+/* Badge styling */
+.badge.bg-secondary {
+    background-color: #858796 !important;
+}
+
     /* Tabs */
     .nav-tabs {
         border-bottom: 2px solid #e3e6f0;
@@ -763,13 +812,142 @@
         </div>
 
         <!-- Files Tab -->
-        <div class="tab-pane fade" id="files">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Archivos del Proyecto</h5>
-                    <p class="text-muted">Los archivos del proyecto aparecerán aquí</p>
+        <!-- Files Tab -->
+<div class="tab-pane fade" id="files">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0">
+            <i class="fas fa-folder-open me-2"></i>
+            Archivos del Proyecto
+            <span class="badge bg-secondary ms-2">{{ $resources->count() }}</span>
+        </h5>
+        <button class="btn btn-primary" onclick="showUploadModalForProject()">
+            <i class="fas fa-upload me-2"></i>
+            Subir Archivo
+        </button>
+    </div>
+
+    @if($resources->count() > 0)
+        <div class="row g-3">
+            @foreach($resources as $resource)
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                <div class="file-icon me-3">
+                                    <i class="fas fa-{{ $resource->icon ?? 'file' }} fa-2x text-primary"></i>
+                                </div>
+                                <div class="flex-fill">
+                                    <h6 class="card-title mb-1">
+                                        <a href="{{ route('resources.show', $resource) }}" class="text-decoration-none">
+                                            {{ $resource->title }}
+                                        </a>
+                                    </h6>
+                                    <p class="text-muted small mb-2">
+                                        {{ $resource->file_size }} • {{ $resource->file_type }}
+                                    </p>
+                                    <p class="card-text small text-muted">
+                                        {{ Str::limit($resource->description, 100) }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="text-muted small">
+                                    <i class="fas fa-user-circle me-1"></i>
+                                    {{ $resource->uploader->name }}
+                                    <br>
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ $resource->created_at->diffForHumans() }}
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('resources.show', $resource) }}" class="btn btn-outline-primary" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('resources.download', $resource) }}" class="btn btn-outline-success" title="Descargar">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    @if($resource->uploaded_by === Auth::id() || $project->creator_id === Auth::id())
+                                        <form action="{{ route('resources.destroy', $resource) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este archivo?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger" title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            @endforeach
+        </div>
+    @else
+        <div class="text-center py-5">
+            <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+            <p class="text-muted">No hay archivos en este proyecto todavía</p>
+            <button class="btn btn-primary" onclick="showUploadModalForProject()">
+                <i class="fas fa-upload me-2"></i>
+                Subir el primer archivo
+            </button>
+        </div>
+    @endif
+</div>
+
+<!-- Modal para subir archivos específico del proyecto -->
+<div class="modal fade" id="projectUploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('resources.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="project_id" value="{{ $project->id }}">
+                
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-upload me-2"></i>
+                        Subir Archivo al Proyecto
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Archivo</label>
+                        <input type="file" name="file" class="form-control" required>
+                        <small class="text-muted">Tamaño máximo: 50MB</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Título del Archivo</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Descripción (opcional)</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Categoría</label>
+                        <select name="category" class="form-select" required>
+                            <option value="">Seleccionar categoría</option>
+                            <option value="document">Documento</option>
+                            <option value="presentation">Presentación</option>
+                            <option value="video">Video</option>
+                            <option value="code">Código</option>
+                            <option value="other">Otro</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i>
+                        Subir Archivo
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -872,6 +1050,12 @@ function showCreateTaskModal(status) {
     
     // Mostrar el modal
     taskModal.show();
+}
+
+
+function showUploadModalForProject() {
+    var myModal = new bootstrap.Modal(document.getElementById('projectUploadModal'));
+    myModal.show();
 }
 
 // Manejar el envío del formulario de crear tarea

@@ -4,35 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Models\Resource;
 use App\Models\Project;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class ResourceController extends Controller
 {
-    /**
-     * Constructor - Requiere autenticación
-     */
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     /**
      * Mostrar lista de recursos
      */
     public function index(Request $request)
     {
-        // Query base
-        $query = Resource::with('uploader');
+        $query = Resource::with(['uploader', 'project']);
 
-        // Filtro por categoría
-        if ($request->has('category') && $request->category !== 'all') {
+        // Filtros
+        if ($request->filled('category') && $request->category !== 'all') {
             $query->where('category', $request->category);
         }
 
-        // Búsqueda
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
@@ -41,8 +34,8 @@ class ResourceController extends Controller
         }
 
         // Ordenamiento
-        $sortBy = $request->get('sort', 'recent');
-        switch ($sortBy) {
+        $sort = $request->get('sort', 'recent');
+        switch ($sort) {
             case 'popular':
                 $query->orderBy('downloads_count', 'desc');
                 break;
@@ -53,7 +46,6 @@ class ResourceController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
 
-        // Paginación
         $resources = $query->paginate(12);
 
         // Estadísticas
@@ -83,49 +75,119 @@ class ResourceController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'file' => 'required|file|max:51200', // 50MB máximo
-            'category' => 'required|in:document,presentation,video,code,other',
-            'project_id' => 'nullable|exists:projects,id'
-        ]);
+        \Log::info('=== INICIO SUBIDA DE RECURSO ===');
+        \Log::info('Datos recibidos:', $request->all());
+        \Log::info('Tiene archivo: ' . ($request->hasFile('file') ? 'SI' : 'NO'));
+        
+        try {
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'file' => 'required|file|max:51200', // 50MB máximo
+                'category' => 'required|in:document,presentation,video,code,other',
+                'project_id' => 'nullable|exists:projects,id'
+            ]);
 
-        // Verificar que el usuario tenga acceso al proyecto si se especifica
-        if ($request->project_id) {
-            $project = Project::findOrFail($request->project_id);
-            if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
-                abort(403, 'No tienes acceso a este proyecto');
+            \Log::info('Validación pasada');
+
+            // Verificar que el usuario tenga acceso al proyecto si se especifica
+            if ($request->project_id) {
+                $project = Project::findOrFail($request->project_id);
+                if (!$project->members->contains(Auth::id()) && $project->creator_id !== Auth::id()) {
+                    abort(403, 'No tienes acceso a este proyecto');
+                }
             }
-        }
 
-        // Subir archivo
-        $file = $request->file('file');
-        $path = $file->store('resources/' . date('Y/m'), 'public');
+            // Subir archivo a AWS S3
+            $file = $request->file('file');
+            \Log::info('Archivo recibido', [
+                'name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime' => $file->getMimeType()
+            ]);
+            
+            // Generar nombre único para el archivo
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            
+            // Definir la ruta en S3
+            $path = 'resources/' . date('Y/m') . '/' . $filename;
+            \Log::info('Ruta S3: ' . $path);
+            
+            // Subir a S3 usando el disco 'moodlepro'
+            $disk = Storage::disk('moodlepro');
+            try {
+                $uploadResult = $disk->put($path, file_get_contents($file), 'public');
+                \Log::info('Resultado de subida S3: ' . ($uploadResult ? 'exitoso' : 'falló'));
+            } catch (\Exception $s3Error) {
+                \Log::error('Error S3: ' . $s3Error->getMessage());
+                throw $s3Error;
+            }
+            
+            // Obtener la URL completa del archivo
+            $url = $disk->url($path);
+            \Log::info('URL generada: ' . $url);
 
         // Determinar el ícono según el tipo de archivo
         $extension = strtolower($file->getClientOriginalExtension());
         $icon = $this->getFileIcon($extension);
 
-        // Crear recurso
-        $resource = Resource::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'file_path' => $path,
-            'file_name' => $file->getClientOriginalName(),
-            'file_type' => $extension,
-            'file_size' => $this->formatFileSize($file->getSize()),
-            'category' => $request->category,
-            'icon' => $icon,
-            'uploaded_by' => Auth::id(),
-            'project_id' => $request->project_id,
-            'downloads_count' => 0,
-            'rating' => 0,
-            'ratings_count' => 0
-        ]);
+            // Crear recurso
+            $resource = Resource::create([
+                'title' => $request->title,
+                'description' => $request->description,
+                'file_path' => $path,
+                'file_url' => $url, // Guardar URL de S3
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $extension,
+                'file_size' => $this->formatFileSize($file->getSize()),
+                'category' => $request->category,
+                'icon' => $icon,
+                'uploaded_by' => Auth::id(),
+                'project_id' => $request->project_id,
+                'downloads_count' => 0,
+                'rating' => 0,
+                'ratings_count' => 0
+            ]);
 
-        return redirect()->route('resources.index')
-            ->with('success', 'Recurso subido exitosamente');
+            \Log::info('Recurso creado con ID: ' . $resource->id);
+
+            // Crear notificación para miembros del proyecto si aplica
+            if ($resource->project_id) {
+                $project = Project::find($resource->project_id);
+                $members = $project->members()->where('user_id', '!=', Auth::id())->get();
+                
+                foreach ($members as $member) {
+                    Notification::create([
+                        'user_id' => $member->id,
+                        'type' => 'resource_shared',
+                        'title' => 'Nuevo recurso compartido',
+                        'message' => Auth::user()->name . ' ha compartido "' . $resource->title . '" en ' . $project->title,
+                        'related_type' => 'resource',
+                        'related_id' => $resource->id
+                    ]);
+                }
+            }
+
+            // Si es una petición AJAX, devolver JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Recurso subido exitosamente',
+                    'redirect' => route('resources.index')
+                ]);
+            }
+            
+            return redirect()->route('resources.index')
+                ->with('success', 'Recurso subido exitosamente');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error al subir recurso: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error al subir el archivo: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -152,8 +214,12 @@ class ResourceController extends Controller
         // Incrementar contador de descargas
         $resource->increment('downloads_count');
 
-        // Descargar archivo
-        return Storage::disk('public')->download($resource->file_path, $resource->file_name);
+        // Descargar desde S3
+        try {
+            return Storage::disk('moodlepro')->download($resource->file_path, $resource->file_name);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al descargar el archivo. Por favor, intenta de nuevo.');
+        }
     }
 
     /**
@@ -165,27 +231,33 @@ class ResourceController extends Controller
             'rating' => 'required|integer|min:1|max:5'
         ]);
 
-        // Actualizar rating (simplificado - en producción sería más complejo)
-        $newRating = ($resource->rating * $resource->ratings_count + $request->rating) / ($resource->ratings_count + 1);
-        
+        // Actualizar calificación
+        $currentTotal = $resource->rating * $resource->ratings_count;
+        $newTotal = $currentTotal + $request->rating;
+        $newCount = $resource->ratings_count + 1;
+        $newAverage = $newTotal / $newCount;
+
         $resource->update([
-            'rating' => $newRating,
-            'ratings_count' => $resource->ratings_count + 1
+            'rating' => $newAverage,
+            'ratings_count' => $newCount
         ]);
 
         return response()->json([
             'success' => true,
-            'new_rating' => round($newRating, 1),
-            'ratings_count' => $resource->ratings_count
+            'message' => '¡Gracias por tu calificación!',
+            'rating' => round($newAverage, 1),
+            'count' => $newCount
         ]);
     }
 
     /**
-     * Marcar como favorito
+     * Agregar a favoritos
      */
     public function favorite(Resource $resource)
     {
-        // Implementación simplificada
+        // Aquí podrías implementar un sistema de favoritos
+        // Por ahora, solo retornamos una respuesta exitosa
+        
         return response()->json([
             'success' => true,
             'message' => 'Recurso agregado a favoritos'
@@ -197,15 +269,20 @@ class ResourceController extends Controller
      */
     public function destroy(Resource $resource)
     {
-        // Solo el propietario puede eliminar
+        // Verificar permisos
         if ($resource->uploaded_by !== Auth::id()) {
-            abort(403, 'No tienes permisos para eliminar este recurso');
+            abort(403, 'No tienes permiso para eliminar este recurso');
         }
 
-        // Eliminar archivo físico
-        Storage::disk('public')->delete($resource->file_path);
-        
-        // Eliminar registro
+        // Eliminar archivo de S3
+        try {
+            Storage::disk('moodlepro')->delete($resource->file_path);
+        } catch (\Exception $e) {
+            // Log del error pero continuar con la eliminación del registro
+            \Log::error('Error al eliminar archivo de S3: ' . $e->getMessage());
+        }
+
+        // Eliminar registro de la base de datos
         $resource->delete();
 
         return redirect()->route('resources.index')
@@ -218,6 +295,7 @@ class ResourceController extends Controller
     private function getFileIcon($extension)
     {
         $icons = [
+            // Documentos
             'pdf' => 'file-pdf',
             'doc' => 'file-word',
             'docx' => 'file-word',
@@ -225,24 +303,42 @@ class ResourceController extends Controller
             'xlsx' => 'file-excel',
             'ppt' => 'file-powerpoint',
             'pptx' => 'file-powerpoint',
-            'zip' => 'file-archive',
-            'rar' => 'file-archive',
-            'mp4' => 'file-video',
-            'avi' => 'file-video',
-            'mov' => 'file-video',
+            'txt' => 'file-alt',
+            
+            // Imágenes
             'jpg' => 'file-image',
             'jpeg' => 'file-image',
             'png' => 'file-image',
             'gif' => 'file-image',
+            'svg' => 'file-image',
+            
+            // Videos
+            'mp4' => 'file-video',
+            'avi' => 'file-video',
+            'mov' => 'file-video',
+            'wmv' => 'file-video',
+            
+            // Audio
             'mp3' => 'file-audio',
             'wav' => 'file-audio',
-            'txt' => 'file-alt',
+            'ogg' => 'file-audio',
+            
+            // Código
             'html' => 'file-code',
             'css' => 'file-code',
             'js' => 'file-code',
             'php' => 'file-code',
+            'py' => 'file-code',
             'java' => 'file-code',
-            'py' => 'file-code'
+            'cpp' => 'file-code',
+            'c' => 'file-code',
+            
+            // Archivos comprimidos
+            'zip' => 'file-archive',
+            'rar' => 'file-archive',
+            '7z' => 'file-archive',
+            'tar' => 'file-archive',
+            'gz' => 'file-archive',
         ];
 
         return $icons[$extension] ?? 'file';
