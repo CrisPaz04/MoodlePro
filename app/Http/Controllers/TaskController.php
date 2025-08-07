@@ -19,7 +19,7 @@ class TaskController extends Controller
         $this->middleware('auth');
     }
 
-    /**
+      /**
      * Mostrar lista de todas las tareas del usuario
      */
     public function index()
@@ -31,6 +31,15 @@ class TaskController extends Controller
             ->with(['project', 'creator'])
             ->orderBy('due_date', 'asc')
             ->get();
+        
+        // DEBUG: Log para verificar las tareas
+        \Log::info('Tasks Index - User: ' . $user->id, [
+            'total_tasks' => $tasks->count(),
+            'todo_count' => $tasks->where('status', 'todo')->count(),
+            'in_progress_count' => $tasks->where('status', 'in_progress')->count(),
+            'done_count' => $tasks->where('status', 'done')->count(),
+            'statuses' => $tasks->pluck('status')->unique()->toArray()
+        ]);
             
         // Obtener TODOS los proyectos del usuario (para el filtro)
         $allUserProjects = $user->projects()
@@ -595,3 +604,50 @@ class TaskController extends Controller
     }
     
 }
+
+/**
+     * Debug: Verificar el estado de las tareas
+     */
+    public function debugTasks()
+    {
+        $user = Auth::user();
+        
+        // Obtener todas las tareas del usuario
+        $allTasks = $user->assignedTasks()->get();
+        
+        // Contar por estado
+        $tasksByStatus = [
+            'todo' => $allTasks->where('status', 'todo')->count(),
+            'in_progress' => $allTasks->where('status', 'in_progress')->count(),
+            'done' => $allTasks->where('status', 'done')->count(),
+            'total' => $allTasks->count()
+        ];
+        
+        // Log detallado
+        \Log::info('Debug Tasks for user: ' . $user->id, [
+            'counts' => $tasksByStatus,
+            'todo_tasks' => $allTasks->where('status', 'todo')->pluck('title', 'id')->toArray(),
+            'all_statuses' => $allTasks->pluck('status', 'id')->toArray()
+        ]);
+        
+        // También verificar valores únicos de status en la BD
+        $uniqueStatuses = Task::where('assigned_to', $user->id)
+            ->distinct()
+            ->pluck('status')
+            ->toArray();
+            
+        return response()->json([
+            'user_id' => $user->id,
+            'counts' => $tasksByStatus,
+            'unique_statuses_in_db' => $uniqueStatuses,
+            'todo_tasks' => $allTasks->where('status', 'todo')->map(function($task) {
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'status' => $task->status,
+                    'status_length' => strlen($task->status),
+                    'raw_status' => bin2hex($task->status) // Para ver si hay caracteres ocultos
+                ];
+            })
+        ]);
+    }

@@ -75,7 +75,8 @@ Route::middleware(['auth'])->group(function () {
     // RUTAS DE TAREAS
     // ============================================
     Route::resource('tasks', TaskController::class);
-    
+    Route::get('/debug/tasks', [App\Http\Controllers\TaskController::class, 'debugTasks'])->middleware('auth');
+
     // API para tareas (RUTAS COMPLETAS AGREGADAS)
     Route::prefix('api/tasks')->name('api.tasks.')->group(function () {
         Route::patch('/{task}/status', [TaskController::class, 'updateStatus'])->name('updateStatus');
