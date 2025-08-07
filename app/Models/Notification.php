@@ -26,6 +26,8 @@ class Notification extends Model
         'related_id',
         'read_at',
         'action_url',
+        'notifiable_type',
+        'notifiable_id',
     ];
 
     /**
