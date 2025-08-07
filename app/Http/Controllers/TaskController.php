@@ -376,14 +376,36 @@ class TaskController extends Controller
         }
     }
 
-    /**
+ /**
      * Actualizar estado de tarea (para Kanban)
      */
     public function updateStatus(Request $request, Task $task)
     {
+        // Log inicial para debugging
+        \Log::info('updateStatus called', [
+            'task_id' => $task->id,
+            'request_status' => $request->status,
+            'current_status' => $task->status,
+            'user_id' => Auth::id()
+        ]);
+
         // Verificar acceso
         $project = $task->project;
+        if (!$project) {
+            \Log::error('Task has no project', ['task_id' => $task->id]);
+            return response()->json([
+                'success' => false,
+                'message' => 'La tarea no tiene proyecto asociado'
+            ], 404);
+        }
+
+        // Verificar permisos
         if (!$project->members->contains(Auth::id()) && $project->created_by !== Auth::id()) {
+            \Log::warning('User has no access to task', [
+                'user_id' => Auth::id(),
+                'task_id' => $task->id,
+                'project_id' => $project->id
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes acceso a esta tarea'
@@ -391,52 +413,96 @@ class TaskController extends Controller
         }
 
         try {
-            $request->validate([
+            // Validar el status
+            $validated = $request->validate([
                 'status' => 'required|in:todo,in_progress,done',
             ]);
 
             $oldStatus = $task->status;
-            $task->update(['status' => $request->status]);
+            
+            // Actualizar el estado
+            $task->status = $validated['status'];
+            $task->save();
 
-            // Log para debugging
-            \Log::info('Task status updated', [
+            // Log después de actualizar
+            \Log::info('Task status updated successfully', [
                 'task_id' => $task->id,
                 'old_status' => $oldStatus,
-                'new_status' => $request->status,
+                'new_status' => $task->status,
                 'updated_by' => Auth::id()
             ]);
 
             // Si la tarea se marcó como completada
-            if ($oldStatus !== 'done' && $request->status === 'done') {
+            if ($oldStatus !== 'done' && $task->status === 'done') {
                 // Notificar al creador si no es el mismo que la completó
-                if ($task->created_by !== Auth::id()) {
-                    Notification::create([
-                        'user_id' => $task->created_by,
-                        'type' => 'task_completed',
-                        'title' => 'Tarea completada',
-                        'message' => Auth::user()->name . " ha completado la tarea: {$task->title}",
-                        'data' => json_encode([
+                if ($task->created_by && $task->created_by !== Auth::id()) {
+                    try {
+                        Notification::create([
+                            'user_id' => $task->created_by,
+                            'type' => 'task_completed',
+                            'title' => 'Tarea completada',
+                            'message' => Auth::user()->name . " ha completado la tarea: {$task->title}",
+                            'data' => json_encode([
+                                'task_id' => $task->id,
+                                'project_id' => $task->project_id,
+                                'completed_by' => Auth::user()->name,
+                            ]),
+                            'notifiable_type' => 'App\\Models\\User',
+                            'notifiable_id' => $task->created_by,
+                            'related_type' => 'App\\Models\\Task',
+                            'related_id' => $task->id,
+                            'action_url' => "/tasks/{$task->id}"
+                        ]);
+                        \Log::info('Notification created for task completion', [
                             'task_id' => $task->id,
-                            'project_id' => $task->project_id,
-                            'completed_by' => Auth::user()->name,
-                        ]),
-                        'notifiable_type' => 'App\\Models\\User',  
-                        'notifiable_id' => $task->created_by,       
-                    ]);
+                            'notified_user' => $task->created_by
+                        ]);
+                    } catch (\Exception $notificationError) {
+                        // Si falla la notificación, no fallar toda la operación
+                        \Log::error('Failed to create notification', [
+                            'error' => $notificationError->getMessage(),
+                            'task_id' => $task->id
+                        ]);
+                    }
                 }
             }
 
-            // Forzar recarga del modelo para asegurar que el estado se actualizó
-            $task->refresh();
+            // Recargar el modelo con sus relaciones
+            $task->load(['assignedUser', 'project', 'creator']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Estado actualizado exitosamente',
-                'task' => $task->load(['assignedUser', 'project'])
+                'task' => [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'status' => $task->status,
+                    'priority' => $task->priority,
+                    'assigned_to' => $task->assigned_to,
+                    'assignedUser' => $task->assignedUser ? [
+                        'id' => $task->assignedUser->id,
+                        'name' => $task->assignedUser->name
+                    ] : null
+                ]
             ]);
 
-        } catch (Exception $e) {
-            \Log::error('Error updating task status: ' . $e->getMessage());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation error in updateStatus', [
+                'errors' => $e->errors(),
+                'task_id' => $task->id
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error updating task status', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'task_id' => $task->id,
+                'request_data' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar el estado: ' . $e->getMessage()
