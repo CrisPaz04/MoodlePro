@@ -72,72 +72,73 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         try {
+            // Log para debugging
+            \Log::info('Task creation request', [
+                'all_data' => $request->all(),
+                'status_requested' => $request->status
+            ]);
+
             $validatedData = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'project_id' => 'required|exists:projects,id',
                 'priority' => 'required|in:low,medium,high',
-                'status' => 'required|in:todo,in_progress,done',
-                'assigned_to' => 'required|exists:users,id', // CAMBIADO: ahora es required
-                'due_date' => 'required|date|after_or_equal:today', // CAMBIADO: ahora es required
+                'status' => 'required|in:todo,in_progress,done',  // Asegurar que 'todo' está permitido
+                'assigned_to' => 'required|exists:users,id',
+                'due_date' => 'required|date|after_or_equal:today',
             ], [
                 'title.required' => 'El título de la tarea es obligatorio',
                 'project_id.required' => 'Debe seleccionar un proyecto',
                 'priority.required' => 'La prioridad es obligatoria',
                 'status.required' => 'El estado es obligatorio',
-                'assigned_to.required' => 'Debe asignar la tarea a un miembro del equipo', // NUEVO mensaje
+                'status.in' => 'El estado debe ser: todo, in_progress o done',
+                'assigned_to.required' => 'Debe asignar la tarea a un miembro del equipo',
                 'assigned_to.exists' => 'El usuario seleccionado no es válido',
-                'due_date.required' => 'La fecha de entrega es obligatoria', // NUEVO mensaje
+                'due_date.required' => 'La fecha de entrega es obligatoria',
                 'due_date.after_or_equal' => 'La fecha de entrega debe ser hoy o posterior',
             ]);
 
-            // Verificar acceso al proyecto
+            // Verificar que el usuario sea miembro del proyecto
             $project = Project::findOrFail($validatedData['project_id']);
             if (!$project->members->contains(Auth::id()) && $project->created_by !== Auth::id()) {
-                if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No tienes acceso a este proyecto'
-                    ], 403);
-                }
-                return redirect()->back()->with('error', 'No tienes acceso a este proyecto');
-            }
-
-            // Verificar que el usuario asignado sea miembro del proyecto
-            if (!$project->members->contains($validatedData['assigned_to'])) {
-                if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'El usuario asignado debe ser miembro del proyecto'
-                    ], 422);
-                }
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'El usuario asignado debe ser miembro del proyecto');
+                throw new \Exception('No tienes acceso a este proyecto');
             }
 
             DB::beginTransaction();
 
-            // Obtener el orden máximo
+            // Obtener el orden máximo actual
             $maxOrder = Task::where('project_id', $validatedData['project_id'])
-                ->where('status', $validatedData['status'])
-                ->max('order') ?? -1;
+                           ->where('status', $validatedData['status'])
+                           ->max('order') ?? -1;
 
-            // Crear la tarea
-            $task = Task::create([
+            // IMPORTANTE: Asegurar que el status se guarde correctamente
+            $taskData = [
                 'title' => $validatedData['title'],
-                'description' => $validatedData['description'],
+                'description' => $validatedData['description'] ?? null,
                 'project_id' => $validatedData['project_id'],
                 'created_by' => Auth::id(),
                 'assigned_to' => $validatedData['assigned_to'],
                 'priority' => $validatedData['priority'],
-                'status' => $validatedData['status'],
+                'status' => $validatedData['status'],  // DEBE incluir 'todo' si se envió
                 'due_date' => $validatedData['due_date'],
                 'order' => $maxOrder + 1,
+            ];
+
+            // Log antes de crear
+            \Log::info('Creating task with data', $taskData);
+
+            // Crear la tarea
+            $task = Task::create($taskData);
+
+            // Log después de crear
+            \Log::info('Task created', [
+                'task_id' => $task->id,
+                'status_saved' => $task->status,
+                'all_attributes' => $task->getAttributes()
             ]);
 
             // Crear notificación si se asignó a alguien diferente del creador
-              if ($task->assigned_to !== Auth::id()) {
+            if ($task->assigned_to !== Auth::id()) {
                 Notification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_assigned',
@@ -148,8 +149,8 @@ class TaskController extends Controller
                         'project_id' => $task->project_id,
                         'assigned_by' => Auth::user()->name,
                     ]),
-                    'notifiable_type' => 'App\\Models\\User',  
-                    'notifiable_id' => $task->assigned_to,     
+                    'notifiable_type' => 'App\\Models\\User',
+                    'notifiable_id' => $task->assigned_to,
                 ]);
             }
 
@@ -170,7 +171,13 @@ class TaskController extends Controller
                 ->with('success', 'Tarea creada exitosamente');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Manejar errores de validación para AJAX
+            DB::rollBack();
+            // Log de error de validación
+            \Log::error('Validation error creating task', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -182,23 +189,23 @@ class TaskController extends Controller
 
         } catch (Exception $e) {
             DB::rollBack();
-            \Log::error('Error creating task: ' . $e->getMessage());
+            \Log::error('Error creating task: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
             
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Hubo un error al crear la tarea',
-                    'error' => $e->getMessage()
+                    'message' => 'Error al crear la tarea: ' . $e->getMessage()
                 ], 500);
             }
             
-            return redirect()
-                ->back()
+            return redirect()->back()
                 ->withInput()
-                ->with('error', 'Hubo un error al crear la tarea');
+                ->with('error', 'Error al crear la tarea: ' . $e->getMessage());
         }
     }
-
     /**
      * Mostrar tarea específica
      */
