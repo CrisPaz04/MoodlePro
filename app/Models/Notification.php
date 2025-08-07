@@ -306,6 +306,8 @@ class Notification extends Model
             'related_type' => Project::class,
             'related_id' => $project->id,
             'action_url' => route('projects.show', $project->id),
+            'notifiable_type' => 'App\\Models\\User', 
+            'notifiable_id' => $user->id,               
         ]);
     }
 
