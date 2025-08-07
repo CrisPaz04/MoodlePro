@@ -1,4 +1,5 @@
 <?php
+// Ruta del archivo: config/database.php
 
 use Illuminate\Support\Str;
 
@@ -16,7 +17,9 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    // CAMBIO IMPORTANTE: Cambiamos el default de 'sqlite' a 'mysql'
+    // Esto permitirá que use PostgreSQL cuando DB_CONNECTION=pgsql en producción
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
