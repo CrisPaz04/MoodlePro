@@ -240,6 +240,8 @@ class Notification extends Model
             'related_type' => Task::class,
             'related_id' => $task->id,
             'action_url' => route('tasks.show', $task),
+            'notifiable_type' => 'App\\Models\\User', 
+            'notifiable_id' => $user->id,
         ]);
     }
 
@@ -262,6 +264,8 @@ class Notification extends Model
             'related_type' => Project::class,
             'related_id' => $project->id,
             'action_url' => route('projects.show', $project),
+            'notifiable_type' => 'App\\Models\\User',
+            'notifiable_id' => $user->id, 
         ]);
     }
 
@@ -284,6 +288,8 @@ class Notification extends Model
             'related_type' => Project::class,
             'related_id' => $project->id,
             'action_url' => route('projects.show', $project),
+            'notifiable_type' => 'App\\Models\\User',
+            'notifiable_id' => $user->id,
         ]);
     }
 
@@ -331,6 +337,8 @@ class Notification extends Model
             'related_type' => Message::class,
             'related_id' => $message->id,
             'action_url' => route('projects.chat', $message->project),
+            'notifiable_type' => 'App\\Models\\User',
+            'notifiable_id' => $user->id, 
         ]);
     }
 
@@ -345,6 +353,8 @@ class Notification extends Model
             'title' => $title,
             'message' => $message,
             'action_url' => $actionUrl,
+            'notifiable_type' => 'App\\Models\\User',
+            'notifiable_id' => $user->id, 
         ]);
     }
 }
