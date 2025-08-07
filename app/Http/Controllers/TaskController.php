@@ -128,7 +128,7 @@ class TaskController extends Controller
             ]);
 
             // Crear notificación si se asignó a alguien diferente del creador
-            if ($task->assigned_to !== Auth::id()) {
+              if ($task->assigned_to !== Auth::id()) {
                 Notification::create([
                     'user_id' => $task->assigned_to,
                     'type' => 'task_assigned',
@@ -139,6 +139,8 @@ class TaskController extends Controller
                         'project_id' => $task->project_id,
                         'assigned_by' => Auth::user()->name,
                     ]),
+                    'notifiable_type' => 'App\\Models\\User',  
+                    'notifiable_id' => $task->assigned_to,     
                 ]);
             }
 
@@ -264,6 +266,8 @@ class TaskController extends Controller
                         'project_id' => $task->project_id,
                         'assigned_by' => Auth::user()->name,
                     ]),
+                    'notifiable_type' => 'App\\Models\\User',  
+                    'notifiable_id' => $validatedData['assigned_to'], 
                 ]);
             }
 
@@ -394,20 +398,22 @@ class TaskController extends Controller
             $oldStatus = $task->status;
             $task->update(['status' => $request->status]);
 
-            // Si la tarea se marcó como completada
-            if ($oldStatus !== 'done' && $request->status === 'done') {
-                // Notificar al creador si no es el mismo que la completó
-                if ($task->created_by !== Auth::id()) {
+           // Notificar si cambió el estado (si la tarea fue completada)
+            if ($task->status !== $oldStatus && $task->status === 'done') {
+                // Notificar al creador si la tarea fue completada por otro
+                if ($task->assigned_to !== $task->created_by) {
                     Notification::create([
                         'user_id' => $task->created_by,
                         'type' => 'task_completed',
                         'title' => 'Tarea completada',
-                        'message' => Auth::user()->name . " ha completado la tarea: {$task->title}",
+                        'message' => "{$task->assignedUser->name} ha completado la tarea: {$task->title}",
                         'data' => json_encode([
                             'task_id' => $task->id,
                             'project_id' => $task->project_id,
-                            'completed_by' => Auth::user()->name,
+                            'completed_by' => $task->assignedUser->name,
                         ]),
+                        'notifiable_type' => 'App\\Models\\User',  
+                        'notifiable_id' => $task->created_by,       
                     ]);
                 }
             }
