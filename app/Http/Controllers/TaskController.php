@@ -603,8 +603,6 @@ class TaskController extends Controller
         }
     }
     
-}
-
 /**
      * Debug: Verificar el estado de las tareas
      */
@@ -646,8 +644,11 @@ class TaskController extends Controller
                     'title' => $task->title,
                     'status' => $task->status,
                     'status_length' => strlen($task->status),
-                    'raw_status' => bin2hex($task->status) // Para ver si hay caracteres ocultos
+                    'raw_status' => bin2hex($task->status)
                 ];
             })
         ]);
     }
+
+}
+
